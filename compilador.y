@@ -11,8 +11,9 @@
 #include "compilador.h"
 
 #include "symbolTable.c"
+#include "definitions.h"
 
-int num_vars;
+int lexicalLevel = 0;
 
 %}
 
@@ -47,8 +48,16 @@ parte_declara_vars:  var
 ;
 
 
-var         : { } VAR declara_vars
-            |
+var         : {
+                int idCount = 0;
+              }
+              VAR declara_vars
+              {
+                char amem[10];
+                sprinf(amem,"AMEM %d", idCount);
+                geraCodigo(NULL, amem);
+              }
+              |
 ;
 
 declara_vars: declara_vars declara_var 
@@ -66,9 +75,28 @@ declara_var : { }
 tipo        : IDENT
 ;
 
-lista_id_var: lista_id_var VIRGULA IDENT 
+lista_id_var: lista_id_var VIRGULA identificador 
               { /* insere última vars na tabela de símbolos */ }
-            | IDENT { /* insere vars na tabela de símbolos */}
+            | identificador { /* insere vars na tabela de símbolos */}
+;
+
+identificador: IDENT
+              {
+                Symbol newSymbol;
+                newSymbol.name = getToken();
+                newSymbol.category = VS;
+                newSymbol.lexicalLevel = lexicalLevel;
+                newSymbol.displacement = idCount;
+
+                Type type;
+                type.primitiveType = INT;
+                type.isReference = 0;
+                newSymbol.types = &type;
+                newSymbol.typesSize = 1;
+                
+                symbolTable.push(newSymbol);
+                idCount++;
+              }
 ;
 
 lista_idents: lista_idents VIRGULA IDENT  
