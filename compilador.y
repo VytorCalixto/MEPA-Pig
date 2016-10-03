@@ -13,7 +13,9 @@
 #include "symbolTable.c"
 #include "definitions.h"
 
+SymbolTable symbolTable;
 int lexicalLevel = 0;
+int idCount = 0;
 
 %}
 
@@ -49,7 +51,7 @@ parte_declara_vars:  var
 
 
 var         : {
-                int idCount = 0;
+                idCount = 0;
               }
               VAR declara_vars
               {
@@ -83,7 +85,7 @@ lista_id_var: lista_id_var VIRGULA identificador
 identificador: IDENT
               {
                 Symbol newSymbol;
-                newSymbol.name = getToken();
+                strcopy(newSymbol.name,token);
                 newSymbol.category = VS;
                 newSymbol.lexicalLevel = lexicalLevel;
                 newSymbol.displacement = idCount;
@@ -94,7 +96,7 @@ identificador: IDENT
                 newSymbol.types = &type;
                 newSymbol.typesSize = 1;
                 
-                symbolTable.push(newSymbol);
+                push(newSymbol,&symbolTable);
                 idCount++;
               }
 ;
@@ -131,7 +133,6 @@ main (int argc, char** argv) {
 /* -------------------------------------------------------------------
  *  Inicia a Tabela de Símbolos
  * ------------------------------------------------------------------- */
-  SymbolTable symbolTable;
   startSymbolTable(&symbolTable);
 
    yyin=fp;
