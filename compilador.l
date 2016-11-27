@@ -56,6 +56,96 @@ end { simbolo = simb_end;
           return T_END;
  }
 
+while { simbolo = simb_while;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("while  ");
+          return WHILE;
+ }
+
+do { simbolo = simb_do;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("do  ");
+          return DO;
+ }
+
+if { simbolo = simb_if;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("if  ");
+          return IF;
+ }
+
+then { simbolo = simb_then;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("then  ");
+          return THEN;
+ }
+
+else { simbolo = simb_else;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("else  ");
+          return ELSE;
+ }
+
+procedure { simbolo = simb_procedure;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("procedure  ");
+          return PROCEDURE;
+ }
+
+function { simbolo = simb_function;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("function  ");
+          return FUNCTION;
+ }
+
+goto { simbolo = simb_goto;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("goto  ");
+          return GOTO;
+ }
+
+label { simbolo = simb_label;
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME("label  ");
+          return LABEL;
+ }
+
+>= { simbolo = simb_maior_igual;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" maior_igual  ");
+          return MAIOR_IGUAL;  
+ }
+
+<= { simbolo = simb_menor_igual;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" menor_igual  ");
+          return MENOR_IGUAL;  
+ }
+
+<> { simbolo = simb_diferente;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" diferente  ");
+          return DIFERENTE;  
+ }
+
+> { simbolo = simb_maior;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" maior  ");
+          return MAIOR;  
+ }
+
+< { simbolo = simb_menor;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" menor  ");
+          return MENOR;  
+ }
+
+= { simbolo = simb_igual;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" igual  ");
+          return IGUAL;  
+ }
+
 := { simbolo = simb_atribuicao;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" atribuicao  ");
@@ -98,6 +188,12 @@ end { simbolo = simb_end;
           IMPRIME(" fecha_parenteses ");
           return FECHA_PARENTESES;
  }
+
+{numero} { simbolo = simb_numero; 
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" numero  ");
+          return NUMERO;
+        }
 
 {ident} { simbolo = simb_identificador; 
           strncpy (token, yytext, TAM_TOKEN);
