@@ -11,8 +11,11 @@
 #include "compilador.h"
 
 #include "symbolTable.c"
+#include "definitions.h"
 
-int num_vars;
+SymbolTable symbolTable;
+int lexicalLevel = 0;
+int idCount = 0;
 
 %}
 
@@ -50,11 +53,15 @@ parte_declara_vars:  var |
 ;
 
 
-var: { num_vars = 0; } VAR declara_vars 
-     { char amem[10]; 
-       sprintf(amem, "AMEM %d", num_vars);
-       geraCodigo(NULL, amem);
-     }
+var         : {
+                idCount = 0;
+              }
+              VAR declara_vars
+              {
+                char amem[10];
+                sprinf(amem,"AMEM %d", idCount);
+                geraCodigo(NULL, amem);
+              }
 ;
 
 declara_vars: declara_vars declara_var 
@@ -72,18 +79,32 @@ declara_var : { }
 tipo        : IDENT
 ;
 
-lista_id_var: lista_id_var VIRGULA IDENT 
+lista_id_var: lista_id_var VIRGULA identificador 
               { /* insere última vars na tabela de símbolos */ }
-            | IDENT { /* insere vars na tabela de símbolos */}
+            | identificador { /* insere vars na tabela de símbolos */}
+;
+
+identificador: IDENT
+              {
+                Symbol newSymbol;
+                strcopy(newSymbol.name,token);
+                newSymbol.category = VS;
+                newSymbol.lexicalLevel = lexicalLevel;
+                newSymbol.displacement = idCount;
+
+                Type type;
+                type.primitiveType = INT;
+                type.isReference = 0;
+                newSymbol.types = &type;
+                newSymbol.typesSize = 1;
+                
+                push(newSymbol,&symbolTable);
+                idCount++;
+              }
 ;
 
 lista_idents: lista_idents VIRGULA IDENT  
             | IDENT
-;
-
-identificador: IDENT 
-              { num_vars++; 
-                /*adiciona identificador na tabela de símbolos*/}
 ;
 
 comando_composto: T_BEGIN comandos T_END
@@ -212,7 +233,6 @@ main (int argc, char** argv) {
 /* -------------------------------------------------------------------
  *  Inicia a Tabela de Símbolos
  * ------------------------------------------------------------------- */
-  SymbolTable symbolTable;
   startSymbolTable(&symbolTable);
 
    yyin=fp;

@@ -1,13 +1,17 @@
+#include "definitions.h"
+
 typedef struct Type{
-  char[3] valueType;
-  char[5] primitiveType;
+  int primitiveType;
+  int isReference;
 }
 
 typedef struct Symbol{
-  char[30] type;
+  char[TOKEN_MAX_SIZE] name;
+  int category;
   int lexicalLevel;
   int displacement;
   Type *types;
+  int typesSize;
 }
 
 typedef struct SymbolTableRow{
