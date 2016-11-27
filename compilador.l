@@ -110,37 +110,37 @@ label { simbolo = simb_label;
           return LABEL;
  }
 
->= { simbolo = simb_maior_igual;  
+\>= { simbolo = simb_maior_igual;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" maior_igual  ");
           return MAIOR_IGUAL;  
  }
 
-<= { simbolo = simb_menor_igual;  
+\<= { simbolo = simb_menor_igual;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" menor_igual  ");
           return MENOR_IGUAL;  
  }
 
-<> { simbolo = simb_diferente;  
+\<> { simbolo = simb_diferente;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" diferente  ");
           return DIFERENTE;  
  }
 
-> { simbolo = simb_maior;  
+\> { simbolo = simb_maior;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" maior  ");
           return MAIOR;  
  }
 
-< { simbolo = simb_menor;  
+\< { simbolo = simb_menor;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" menor  ");
           return MENOR;  
  }
 
-= { simbolo = simb_igual;  
+\= { simbolo = simb_igual;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" igual  ");
           return IGUAL;  
