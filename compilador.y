@@ -49,7 +49,7 @@ bloco:  parte_declara_rotulos
         {
           lexicalLevel++;
         }
-        //parte_declara_subrotinas 
+        parte_declara_subrotinas 
         {
           lexicalLevel--;
         }
@@ -154,16 +154,27 @@ repetitivo: WHILE
             } comando_sem_rotulo
 ;
 
-expressao: expressao relacao expr_simples 
-         | expr_simples
+expressao: expressao relacao expr_e 
+         | expr_e
 ;
 
 relacao: MAIOR | MENOR | MAIOR_IGUAL | MENOR_IGUAL
        | IGUAL | DIFERENTE
 ;
 
-expr_simples: ABRE_PARENTESES expressao FECHA_PARENTESES
-            | IDENT
+expr_e: expr_e MAIS expr_t
+      | expr_e OR expr_t
+      | expr_t
+;
+
+expr_t: expr_t VEZES expr_f
+      | expr_t AND expr_f
+      | expr_f
+;
+
+expr_f: ABRE_PARENTESES expr_e FECHA_PARENTESES
+      | NUMERO
+      | IDENT
 ;
 
 condicional: IF expressao THEN
