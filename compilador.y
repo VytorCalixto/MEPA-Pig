@@ -16,6 +16,7 @@
 SymbolTable symbolTable;
 int lexicalLevel = 0;
 int idCount = 0;
+int category = VS;
 
 %}
 
@@ -25,70 +26,66 @@ int idCount = 0;
 %token WHILE DO IF THEN ELSE
 %token MAIOR MENOR IGUAL DIFERENTE MAIOR_IGUAL MENOR_IGUAL
 %token PROCEDURE FUNCTION GOTO LABEL NUMERO
+%token MAIS MENOS VEZES OR AND
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 
 %%
 
-programa:{ 
-         geraCodigo (NULL, "INPP"); 
-         }
-         PROGRAM IDENT 
-         ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
-         bloco PONTO {
-         geraCodigo (NULL, "PARA"); 
-         }
+programa: { 
+            geraCodigo(NULL, "INPP"); 
+          }
+          PROGRAM IDENT 
+          ABRE_PARENTESES lista_idents FECHA_PARENTESES PONTO_E_VIRGULA
+          bloco PONTO
+          {
+            geraCodigo(NULL, "PARA"); 
+          }
 ;
 
-bloco: parte_declara_rotulos
-       parte_declara_vars
-       { 
-       }
-       parte_declara_subrotinas 
-       comando_composto 
+bloco:  parte_declara_rotulos
+        parte_declara_vars
+        //parte_declara_subrotinas 
+        comando_composto 
+        {
+          char dmem[AMEM_MAX];
+          sprintf(dmem,"DMEM %d", idCount);
+          geraCodigo(NULL, dmem);
+        }
 ;
 
-parte_declara_vars:  var | 
-;
-
-
-var         : {
-                idCount = 0;
-              }
-              VAR declara_vars
-              {
-                char amem[10];
-                sprinf(amem,"AMEM %d", idCount);
-                geraCodigo(NULL, amem);
-              }
+parte_declara_vars: {
+                      idCount = 0;
+                    }
+                    VAR declara_vars
+                    {
+                      char amem[AMEM_MAX];
+                      sprintf(amem,"AMEM %d", idCount);
+                      geraCodigo(NULL, amem);
+                    }
+                    |
 ;
 
 declara_vars: declara_vars declara_var 
             | declara_var 
 ;
 
-declara_var : { } 
-              lista_id_var DOIS_PONTOS 
-              tipo 
-              { /* AMEM */
-              }
-              PONTO_E_VIRGULA
+declara_var:  lista_id_var DOIS_PONTOS tipo PONTO_E_VIRGULA
 ;
 
-tipo        : IDENT
+tipo: IDENT
 ;
 
 lista_id_var: lista_id_var VIRGULA identificador 
-              { /* insere última vars na tabela de símbolos */ }
-            | identificador { /* insere vars na tabela de símbolos */}
+            | identificador
 ;
 
 identificador: IDENT
               {
                 Symbol newSymbol;
-                strcopy(newSymbol.name,token);
-                newSymbol.category = VS;
+                strcpy(newSymbol.name,token);
+                newSymbol.category = category;
                 newSymbol.lexicalLevel = lexicalLevel;
                 newSymbol.displacement = idCount;
 
@@ -112,6 +109,7 @@ comando_composto: T_BEGIN comandos T_END
 
 comandos: comandos comando
         | comando
+        |
 ;
 
 comando: rotulo comando_sem_rotulo PONTO_E_VIRGULA
@@ -214,7 +212,7 @@ declara_func: FUNCTION declara_subrotina
 
 %%
 
-main (int argc, char** argv) {
+int main (int argc, char** argv) {
    FILE* fp;
    extern FILE* yyin;
 

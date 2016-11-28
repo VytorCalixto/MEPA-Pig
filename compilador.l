@@ -146,6 +146,36 @@ label { simbolo = simb_label;
           return IGUAL;  
  }
 
+\+ { simbolo = simb_mais;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" mais  ");
+          return MAIS;  
+ }
+
+\- { simbolo = simb_menos;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" menos  ");
+          return MENOS;  
+ }
+
+\* { simbolo = simb_vezes;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" vezes  ");
+          return VEZES;  
+ }
+
+or { simbolo = simb_or;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" or  ");
+          return OR;  
+ }
+
+and { simbolo = simb_and;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" and  ");
+          return AND;  
+ }
+
 := { simbolo = simb_atribuicao;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" atribuicao  ");

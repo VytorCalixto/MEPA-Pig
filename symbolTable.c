@@ -3,16 +3,16 @@
 typedef struct Type{
   int primitiveType;
   int isReference;
-}
+}Type;
 
 typedef struct Symbol{
-  char[TOKEN_MAX_SIZE] name;
   int category;
   int lexicalLevel;
   int displacement;
-  Type *types;
   int typesSize;
-}
+  Type *types;
+  char name[TAM_TOKEN];
+}Symbol;
 
 typedef struct SymbolTableRow{
   Symbol symbol;
