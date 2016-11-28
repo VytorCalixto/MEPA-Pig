@@ -10,7 +10,7 @@ y.tab.c: compilador.y compilador.h
 	bison compilador.y -d -v
 
 compilador.o : compilador.h compiladorF.c
-	gcc -c compiladorF.c -o compilador.o
+	gcc -g -c compiladorF.c -o compilador.o
 
 clean : 
 	rm -f compilador.tab.* lex.yy.c 

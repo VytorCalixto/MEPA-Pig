@@ -46,9 +46,16 @@ programa: {
 
 bloco:  parte_declara_rotulos
         parte_declara_vars
+        {
+          lexicalLevel++;
+        }
         //parte_declara_subrotinas 
+        {
+          lexicalLevel--;
+        }
         comando_composto 
         {
+          clearLevel(lexicalLevel, &symbolTable);
           char dmem[AMEM_MAX];
           sprintf(dmem,"DMEM %d", idCount);
           geraCodigo(NULL, dmem);

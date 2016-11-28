@@ -24,13 +24,12 @@ typedef struct{
 }SymbolTable;
 
 void startSymbolTable(SymbolTable *symbolTable){
-  symbolTable->head = (SymbolTableRow*)malloc(sizeof(SymbolTableRow));
+  symbolTable->head = NULL;
   symbolTable->tail = symbolTable->head;
-  symbolTable->tail->next = NULL;
 }
 
-int emptySymbolTable(SymbolTable symbolTable){
-  return (symbolTable.head == symbolTable.tail);
+int emptySymbolTable(SymbolTable *symbolTable){
+  return (symbolTable->head == NULL);
 }
 
 void push(Symbol symbol, SymbolTable *symbolTable){
@@ -40,15 +39,31 @@ void push(Symbol symbol, SymbolTable *symbolTable){
   symbolTable->head = head;
 }
 
-Symbol pop(SymbolTable *symbolTable){
-  SymbolTableRow *aux;
-  if(emptySymbolTable(*symbolTable)){
-    puts("Erro: não é possível desenfileirar.\nMotivo: a Tabela de Símbolos está vazia.");
-    return;
-  }else{
-    aux = symbolTable->head;
-    symbolTable->head = symbolTable->head->next;
-    free(aux);
-    return symbolTable->head->symbol;
+// Symbol pop(SymbolTable *symbolTable){
+//   SymbolTableRow *aux;
+//   if(emptySymbolTable(symbolTable)){
+//     return NULL;
+//   }else{
+//     aux = symbolTable->head;
+//     Symbol value = aux->symbol;
+//     symbolTable->head = symbolTable->head->next;
+//     free(aux);
+//     return value;
+//   }
+// }
+
+void clearLevel(int lexicalLevel, SymbolTable *symbolTable){
+  if(!emptySymbolTable(symbolTable)){
+    SymbolTableRow* iter = symbolTable->head;
+    while(iter->next != NULL 
+            && iter->next->symbol.lexicalLevel >= lexicalLevel){
+      symbolTable->head = symbolTable->head->next;
+      free(iter);
+      iter = symbolTable->head;
+    }
+    if(lexicalLevel == 0){
+      symbolTable->head = symbolTable->head->next;
+      free(iter);
+    }
   }
 }
