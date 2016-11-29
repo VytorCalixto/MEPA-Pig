@@ -18,6 +18,8 @@ int lexicalLevel = 0;
 int idCount = 0;
 int category = VS;
 
+Address varAddress;
+
 %}
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES 
@@ -26,7 +28,7 @@ int category = VS;
 %token WHILE DO IF THEN ELSE
 %token MAIOR MENOR IGUAL DIFERENTE MAIOR_IGUAL MENOR_IGUAL
 %token PROCEDURE FUNCTION GOTO LABEL NUMERO
-%token MAIS MENOS VEZES OR AND
+%token MAIS MENOS VEZES DIVIDIDO OR AND
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -93,8 +95,10 @@ identificador: IDENT
                 Symbol newSymbol;
                 strcpy(newSymbol.name,token);
                 newSymbol.category = category;
-                newSymbol.lexicalLevel = lexicalLevel;
-                newSymbol.displacement = idCount;
+                Address address;
+                address.lexicalLevel = lexicalLevel;
+                address.displacement = idCount;                
+                newSymbol.address = address;
 
                 Type type;
                 type.primitiveType = INT;
@@ -140,7 +144,14 @@ atribuicao: variavel ATRIBUICAO expressao
 ;
 
 variavel: IDENT 
-          { /* busca identificador na tabela e insere o "endereço" numa variavel*/}
+          { 
+            Symbol* symbol = findSymbol(token, &symbolTable);
+            if(symbol == NULL){
+              imprimeErro("Símbolo inexistente.");
+            }else{
+              varAddress = symbol->address;
+            }
+          }
 ;
 
 repetitivo: WHILE
@@ -154,7 +165,7 @@ repetitivo: WHILE
             } comando_sem_rotulo
 ;
 
-expressao: expressao relacao expr_e 
+expressao: expr_e relacao expr_e 
          | expr_e
 ;
 
@@ -164,15 +175,17 @@ relacao: MAIOR | MENOR | MAIOR_IGUAL | MENOR_IGUAL
 
 expr_e: expr_e MAIS expr_t
       | expr_e OR expr_t
+      | expr_e MENOS expr_t
       | expr_t
 ;
 
 expr_t: expr_t VEZES expr_f
       | expr_t AND expr_f
+      | expr_t DIVIDIDO expr_f
       | expr_f
 ;
 
-expr_f: ABRE_PARENTESES expr_e FECHA_PARENTESES
+expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES
       | NUMERO
       | IDENT
 ;

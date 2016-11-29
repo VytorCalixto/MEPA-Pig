@@ -164,6 +164,12 @@ label { simbolo = simb_label;
           return VEZES;  
  }
 
+\\ { simbolo = simb_dividido;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" dividido  ");
+          return DIVIDIDO;  
+ }
+
 or { simbolo = simb_or;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" or  ");
