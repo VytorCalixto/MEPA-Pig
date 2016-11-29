@@ -20,6 +20,12 @@ int category = VS;
 
 Address varAddress;
 
+void verifyType(int type, int first, int third){
+  if(first != type || third != type){
+    imprimeErro("Erro de sintaxe.");
+  }
+} 
+
 %}
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES 
@@ -28,7 +34,7 @@ Address varAddress;
 %token WHILE DO IF THEN ELSE
 %token MAIOR MENOR IGUAL DIFERENTE MAIOR_IGUAL MENOR_IGUAL
 %token PROCEDURE FUNCTION GOTO LABEL NUMERO
-%token MAIS MENOS VEZES DIVIDIDO OR AND
+%token MAIS MENOS VEZES DIVIDIDO OR AND TRUE FALSE
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -165,29 +171,34 @@ repetitivo: WHILE
             } comando_sem_rotulo
 ;
 
-expressao: expr_e relacao expr_e 
-         | expr_e
+expressao: expr_e relacao expr_e { verifyType(INT, $1, $3); $$ = BOOL;}
+         | expr_e {$$ = $1;}
 ;
 
 relacao: MAIOR | MENOR | MAIOR_IGUAL | MENOR_IGUAL
        | IGUAL | DIFERENTE
 ;
 
-expr_e: expr_e MAIS expr_t
-      | expr_e OR expr_t
-      | expr_e MENOS expr_t
-      | expr_t
+expr_e: expr_e MAIS expr_t { verifyType(INT, $1, $3); $$ = INT; }
+      | expr_e OR expr_t { verifyType(BOOL, $1, $3); $$ = BOOL; }
+      | expr_e MENOS expr_t { verifyType(INT, $1, $3); $$ = INT; }
+      | expr_t {$$ = $1;}
 ;
 
-expr_t: expr_t VEZES expr_f
-      | expr_t AND expr_f
-      | expr_t DIVIDIDO expr_f
-      | expr_f
+expr_t: expr_t VEZES expr_f { verifyType(INT, $1, $3); $$ = INT; }
+      | expr_t AND expr_f { verifyType(BOOL, $1, $3); $$ = BOOL; }
+      | expr_t DIVIDIDO expr_f { verifyType(INT, $1, $3); $$ = INT; }
+      | expr_f {$$ = $1;}
 ;
 
-expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES
-      | NUMERO
-      | IDENT
+expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {$$ = $2;}
+      | constante {$$ = $1;}
+      | IDENT {$$ = INT;}
+;
+
+constante: NUMERO {$$ = INT;}
+         | TRUE {$$ = BOOL;}
+         | FALSE {$$ = BOOL;}
 ;
 
 condicional: IF expressao THEN

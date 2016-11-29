@@ -182,6 +182,18 @@ and { simbolo = simb_and;
           return AND;  
  }
 
+True { simbolo = simb_true;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" true  ");
+          return TRUE;  
+ }
+
+False { simbolo = simb_false;  
+          strncpy (token, yytext, TAM_TOKEN);
+          IMPRIME(" false  ");
+          return FALSE;  
+ }
+
 := { simbolo = simb_atribuicao;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" atribuicao  ");
