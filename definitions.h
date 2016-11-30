@@ -1,4 +1,4 @@
-#define AMEM_MAX 10
+#define CMD_MAX 10
 
 #define VS 0
 #define PF 1

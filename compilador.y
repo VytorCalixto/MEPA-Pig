@@ -17,10 +17,15 @@ SymbolTable symbolTable;
 int lexicalLevel = 0;
 int idCount = 0;
 int category = VS;
+int cteValue = 0;
+int fValue = 0;
+int tValue = 0;
+int eValue = 0;
 
 Address varAddress;
 
 void verifyType(int type, int first, int third){
+  printf("%d %d \n", first, third);
   if(first != type || third != type){
     imprimeErro("Erro de sintaxe.");
   }
@@ -64,7 +69,7 @@ bloco:  parte_declara_rotulos
         comando_composto 
         {
           clearLevel(lexicalLevel, &symbolTable);
-          char dmem[AMEM_MAX];
+          char dmem[CMD_MAX];
           sprintf(dmem,"DMEM %d", idCount);
           geraCodigo(NULL, dmem);
         }
@@ -75,7 +80,7 @@ parte_declara_vars: {
                     }
                     VAR declara_vars
                     {
-                      char amem[AMEM_MAX];
+                      char amem[CMD_MAX];
                       sprintf(amem,"AMEM %d", idCount);
                       geraCodigo(NULL, amem);
                     }
@@ -144,7 +149,13 @@ comando_sem_rotulo: atribuicao
 ;
 
 atribuicao: variavel ATRIBUICAO expressao
-            { /*carrega o valor da expressao e armazena no identificador(memória)*/
+            {
+              if($3 != INT){
+                imprimeErro("Erro de sintaxe");
+              }else{
+              }
+              printf("expr = %d", $3);
+              /*carrega o valor da expressao e armazena no identificador(memória)*/
               /*verifica o tipo (erro)*/
             }
 ;
@@ -193,12 +204,30 @@ expr_t: expr_t VEZES expr_f { verifyType(INT, $1, $3); $$ = INT; }
 
 expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {$$ = $2;}
       | constante {$$ = $1;}
-      | IDENT {$$ = INT;}
+      | variavel
+        {
+          $$ = INT;
+        }
 ;
 
-constante: NUMERO {$$ = INT;}
-         | TRUE {$$ = BOOL;}
-         | FALSE {$$ = BOOL;}
+constante: NUMERO
+           {
+            $$ = INT;
+            printf("bool %d \n", $$);
+            cteValue = atoi(token);
+           }
+         | TRUE
+           {
+            $$ = BOOL;
+            printf("bool %d \n", $$);
+            cteValue = 1;
+           }
+         | FALSE 
+           {
+            $$ = BOOL;
+            printf("bool %d \n", $$);
+            cteValue = 0;
+           }
 ;
 
 condicional: IF expressao THEN
