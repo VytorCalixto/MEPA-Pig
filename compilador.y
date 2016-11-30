@@ -13,16 +13,12 @@
 #include "symbolTable.c"
 #include "definitions.h"
 
+
 SymbolTable symbolTable;
 int lexicalLevel = 0;
 int idCount = 0;
 int category = VS;
-int cteValue = 0;
-int fValue = 0;
-int tValue = 0;
-int eValue = 0;
 
-Address varAddress;
 
 void verifyType(int type, int first, int third){
   printf("%d %d \n", first, third);
@@ -33,6 +29,11 @@ void verifyType(int type, int first, int third){
 
 %}
 
+%union {
+  CommandType command;
+  int integer;
+}
+
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES 
 %token VIRGULA PONTO_E_VIRGULA DOIS_PONTOS PONTO
 %token T_BEGIN T_END VAR IDENT ATRIBUICAO
@@ -40,6 +41,9 @@ void verifyType(int type, int first, int third){
 %token MAIOR MENOR IGUAL DIFERENTE MAIOR_IGUAL MENOR_IGUAL
 %token PROCEDURE FUNCTION GOTO LABEL NUMERO
 %token MAIS MENOS VEZES DIVIDIDO OR AND TRUE FALSE
+
+%type <integer> expressao expr_e expr_t expr_f
+%type <command> relacao constante variavel
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -106,10 +110,8 @@ identificador: IDENT
                 Symbol newSymbol;
                 strcpy(newSymbol.name,token);
                 newSymbol.category = category;
-                Address address;
-                address.lexicalLevel = lexicalLevel;
-                address.displacement = idCount;                
-                newSymbol.address = address;
+                newSymbol.lexicalLevel = lexicalLevel;
+                newSymbol.displacement = idCount;                
 
                 Type type;
                 type.primitiveType = INT;
@@ -126,15 +128,18 @@ lista_idents: lista_idents VIRGULA IDENT
             | IDENT
 ;
 
-comando_composto: T_BEGIN comandos T_END
+comando_composto: T_BEGIN comandos comando_end T_END
+                | T_BEGIN comando_end T_END
 ;
 
-comandos: comandos comando
-        | comando
-        |
+comando_end: comando PONTO_E_VIRGULA
+           | comando
+;
+comandos: comandos comando PONTO_E_VIRGULA
+        | comando PONTO_E_VIRGULA
 ;
 
-comando: rotulo comando_sem_rotulo PONTO_E_VIRGULA
+comando: rotulo comando_sem_rotulo
 ;
 
 rotulo: NUMERO DOIS_PONTOS
@@ -153,11 +158,127 @@ atribuicao: variavel ATRIBUICAO expressao
               if($3 != INT){
                 imprimeErro("Erro de sintaxe");
               }else{
+                char armz[CMD_MAX];
+                sprintf(armz,"ARMZ %s", $1.value);
+                geraCodigo(NULL, armz);
               }
               printf("expr = %d", $3);
-              /*carrega o valor da expressao e armazena no identificador(memória)*/
-              /*verifica o tipo (erro)*/
             }
+;
+
+expressao: expr_e relacao expr_e 
+           {
+            verifyType(INT, $1, $3);
+            geraCodigo(NULL, $2.value);
+            $$ = $2.type;
+           }
+         | expr_e {$$ = $1;}
+;
+
+relacao: MAIOR
+         {
+          CommandType ct;
+          strcpy(ct.value,"CMMA");
+          ct.type = BOOL;
+          $$ = ct;
+         } 
+       | MENOR 
+         {
+          CommandType ct;
+          strcpy(ct.value,"CMME");
+          ct.type = BOOL;
+          $$ = ct;
+         } 
+       | MAIOR_IGUAL 
+         {
+          CommandType ct;
+          strcpy(ct.value,"CMAG");
+          ct.type = BOOL;
+          $$ = ct;
+         } 
+       | MENOR_IGUAL
+         {
+          CommandType ct;
+          strcpy(ct.value,"CMEG");
+          ct.type = BOOL;
+          $$ = ct;
+         } 
+       | IGUAL 
+         {
+          CommandType ct;
+          strcpy(ct.value,"CMIG");
+          ct.type = BOOL;
+          $$ = ct;
+         } 
+       | DIFERENTE
+         {
+          CommandType ct;
+          strcpy(ct.value,"CMDG");
+          ct.type = BOOL;
+          $$ = ct;
+         } 
+;
+
+expr_e: expr_e MAIS expr_t 
+        { 
+          verifyType(INT, $1, $3);
+          $$ = INT;
+          geraCodigo(NULL, "SOMA");
+        }
+      | expr_e OR expr_t 
+        { 
+          verifyType(BOOL, $1, $3);
+          $$ = BOOL;
+          geraCodigo(NULL, "DISJ");
+        }
+      | expr_e MENOS expr_t 
+        { 
+          verifyType(INT, $1, $3);
+          $$ = INT;
+          geraCodigo(NULL, "SUBT");
+        }
+      | expr_t {$$ = $1;}
+;
+
+expr_t: expr_t VEZES expr_f 
+        {
+          verifyType(INT, $1, $3);
+          $$ = INT;
+          geraCodigo(NULL, "MULT");
+        }
+      | expr_t AND expr_f
+        {
+          verifyType(BOOL, $1, $3);
+          $$ = BOOL;
+          geraCodigo(NULL, "CONJ");
+        }
+      | expr_t DIVIDIDO expr_f 
+        {
+          verifyType(INT, $1, $3);
+          $$ = INT;
+          geraCodigo(NULL, "DIVI");
+        }
+      | expr_f {$$ = $1;}
+;
+
+expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES
+        {
+          $$ = $2;
+        }
+      | constante 
+        {
+          char crct[CMD_MAX];
+          sprintf(crct,"CRCT %s", $1.value);
+          geraCodigo(NULL, crct);
+          $$ = $1.type;
+        }
+      | variavel
+        {
+          char crvl[CMD_MAX];
+          sprintf(crvl,"CRVL %s", $1.value);
+          geraCodigo(NULL, crvl);
+          $$ = $1.type;
+        }
 ;
 
 variavel: IDENT 
@@ -166,9 +287,39 @@ variavel: IDENT
             if(symbol == NULL){
               imprimeErro("Símbolo inexistente.");
             }else{
-              varAddress = symbol->address;
+              CommandType var;
+              sprintf(var.value, "%d,%d", symbol->lexicalLevel, symbol->displacement);
+              var.type = INT;
+              $$ = var;
+              printf("int %s %d \n", $$.value, $$.type);
             }
           }
+;
+
+constante: NUMERO
+           {
+            CommandType cte;
+            strcpy(cte.value,token);
+            cte.type = INT;
+            $$ = cte;
+            printf("int %s %d \n", $$.value, $$.type);
+           }
+         | TRUE
+           {
+            CommandType cte;
+            strcpy(cte.value,"1");
+            cte.type = BOOL;
+            $$ = cte;
+            printf("bool %s %d \n", $$.value, $$.type);
+           }
+         | FALSE 
+           {
+            CommandType cte;
+            strcpy(cte.value,"0");
+            cte.type = BOOL;
+            $$ = cte;
+            printf("bool %s %d \n", $$.value, $$.type);
+           }
 ;
 
 repetitivo: WHILE
@@ -180,54 +331,6 @@ repetitivo: WHILE
               sprintf(dsvf, "DSVF %d", rot_in);
               geraCodigo(NULL, dsvf);*/
             } comando_sem_rotulo
-;
-
-expressao: expr_e relacao expr_e { verifyType(INT, $1, $3); $$ = BOOL;}
-         | expr_e {$$ = $1;}
-;
-
-relacao: MAIOR | MENOR | MAIOR_IGUAL | MENOR_IGUAL
-       | IGUAL | DIFERENTE
-;
-
-expr_e: expr_e MAIS expr_t { verifyType(INT, $1, $3); $$ = INT; }
-      | expr_e OR expr_t { verifyType(BOOL, $1, $3); $$ = BOOL; }
-      | expr_e MENOS expr_t { verifyType(INT, $1, $3); $$ = INT; }
-      | expr_t {$$ = $1;}
-;
-
-expr_t: expr_t VEZES expr_f { verifyType(INT, $1, $3); $$ = INT; }
-      | expr_t AND expr_f { verifyType(BOOL, $1, $3); $$ = BOOL; }
-      | expr_t DIVIDIDO expr_f { verifyType(INT, $1, $3); $$ = INT; }
-      | expr_f {$$ = $1;}
-;
-
-expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {$$ = $2;}
-      | constante {$$ = $1;}
-      | variavel
-        {
-          $$ = INT;
-        }
-;
-
-constante: NUMERO
-           {
-            $$ = INT;
-            printf("bool %d \n", $$);
-            cteValue = atoi(token);
-           }
-         | TRUE
-           {
-            $$ = BOOL;
-            printf("bool %d \n", $$);
-            cteValue = 1;
-           }
-         | FALSE 
-           {
-            $$ = BOOL;
-            printf("bool %d \n", $$);
-            cteValue = 0;
-           }
 ;
 
 condicional: IF expressao THEN

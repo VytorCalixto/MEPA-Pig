@@ -13,6 +13,15 @@
 
 #define TAM_TOKEN 16
 
+//----- Adiconado por Israel B. Sant'Anna -----
+#define CMD_MAX 10
+
+typedef struct CommandType{
+  char value[CMD_MAX];
+  int type;
+}CommandType;
+//---------------------------------------------
+
 typedef enum simbolos { 
   simb_program, simb_var, simb_begin, simb_end, 
   simb_identificador, simb_numero,

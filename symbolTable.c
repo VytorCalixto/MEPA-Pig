@@ -5,14 +5,10 @@ typedef struct Type{
   int isReference;
 }Type;
 
-typedef struct Address{
+typedef struct Symbol{
   int lexicalLevel;
   int displacement;
-}Address;
-
-typedef struct Symbol{
   int category;
-  Address address;
   int typesSize;
   Type *types;
   char name[TAM_TOKEN];
@@ -60,7 +56,7 @@ void clearLevel(int lexicalLevel, SymbolTable *symbolTable){
   if(!emptySymbolTable(symbolTable)){
     SymbolTableRow* iter = symbolTable->head;
     while(iter->next != NULL 
-            && iter->next->symbol.address.lexicalLevel >= lexicalLevel){
+            && iter->next->symbol.lexicalLevel >= lexicalLevel){
       symbolTable->head = symbolTable->head->next;
       free(iter);
       iter = symbolTable->head;
