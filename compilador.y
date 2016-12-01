@@ -21,8 +21,6 @@ int category = VS;
 int constType = -1;
 int labelCount = 0;
 
-char labelWhileStart[CMD_MAX], labelWhileEnd[CMD_MAX], labelElse[CMD_MAX], labelIfEnd[CMD_MAX];
-
 void verifyType(int type, int first, int third){
   if(first != type || third != type){
     imprimeErro("Erro de sintaxe.");
@@ -278,28 +276,41 @@ constante: NUMERO
 
 repetitivo: WHILE
             { 
-              nextLabel(labelWhileStart);
-              geraCodigo(labelWhileStart, "NADA");
+              char *labelStart = (char*)malloc(sizeof(char)*CMD_MAX);
+              nextLabel(labelStart);
+              printf("\n\n ----- nextLabel %s \n\n",labelStart);
+              push(labelStart,&labels);
+              geraCodigo(labelStart, "NADA");
             } 
             expressao DO
             {
-              nextLabel(labelWhileEnd);
+              char *labelEnd = (char*)malloc(sizeof(char)*CMD_MAX);
+              nextLabel(labelEnd);
+              push(labelEnd,&labels);
               char dsvf[CMD_MAX];
-              sprintf(dsvf,"DSVF %s",labelWhileEnd);
+              sprintf(dsvf,"DSVF %s",labelEnd);
               geraCodigo(NULL, dsvf);
             }
             comando_sem_rotulo
             {
+              char *labelEnd = (char*)pop(&labels);
+              char *labelStart = (char*)pop(&labels);
+              printf("\n\n ----- pop %s \n\n",labelStart);
+              if(labelStart == NULL || labelEnd == NULL) 
+                imprimeErro("Pilha vazia");
               char dsvs[CMD_MAX];
-              sprintf(dsvs,"DSVS %s",labelWhileStart);
+              sprintf(dsvs,"DSVS %s",labelStart);
               geraCodigo(NULL, dsvs);
-              geraCodigo(labelWhileEnd, "NADA");
+              geraCodigo(labelEnd, "NADA");
             }
 ;
 
 condicional: IF expressao THEN
             { 
+              char *labelElse = (char*)malloc(sizeof(char)*CMD_MAX);
               nextLabel(labelElse);
+              push(labelElse,&labels);
+
               char dsvf[CMD_MAX];
               sprintf(dsvf,"DSVF %s",labelElse);
               geraCodigo(NULL, dsvf);
@@ -309,18 +320,31 @@ condicional: IF expressao THEN
 
 cond_else: ELSE
            {
-             nextLabel(labelIfEnd);
+             char *labelElse = (char*)pop(&labels);
+             if(labelElse == NULL) 
+                imprimeErro("Pilha vazia");
+
+             char *labelEnd = (char*)malloc(sizeof(char)*CMD_MAX);
+             nextLabel(labelEnd);
+             push(labelEnd,&labels);
+
              char dsvs[CMD_MAX];
-             sprintf(dsvs,"DSVS %s",labelIfEnd);
+             sprintf(dsvs,"DSVS %s",labelEnd);
              geraCodigo(NULL, dsvs);
              geraCodigo(labelElse, "NADA");
            }
            comando_sem_rotulo
            {
-             geraCodigo(labelIfEnd, "NADA");
+             char *labelEnd = (char*)pop(&labels);
+             if(labelEnd == NULL) 
+                imprimeErro("Pilha vazia");
+             geraCodigo(labelEnd, "NADA");
            }
          | %prec LOWER_THAN_ELSE
            {
+             char *labelElse = (char*)pop(&labels);
+             if(labelElse == NULL) 
+                imprimeErro("Pilha vazia");
              geraCodigo(labelElse, "NADA");
            }
 ;

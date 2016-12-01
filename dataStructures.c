@@ -73,7 +73,6 @@ void clearLevel(int lexicalLevel, Stack *stack){
 Symbol* findSymbol(char name[TAM_TOKEN], Stack *stack){
   for(StackNode* iter=stack->head; iter != NULL; iter=iter->next){
     Symbol *symbol = (Symbol*)iter->element;
-    printf("\n\n ---- symbol: %s\n\n", symbol->name);
     if(strcmp(symbol->name, name) == 0){
       return symbol;
     }
