@@ -10,21 +10,28 @@
 #include <string.h>
 #include "compilador.h"
 
-#include "symbolTable.c"
+#include "dataStructures.c"
 #include "definitions.h"
 
 
-SymbolTable symbolTable;
+Stack symbolTable, labels;
 int lexicalLevel = 0;
 int idCount = 0;
 int category = VS;
 int constType = -1;
+int labelCount = 0;
+
+char labelWhileStart[CMD_MAX], labelWhileEnd[CMD_MAX], labelElse[CMD_MAX], labelIfEnd[CMD_MAX];
 
 void verifyType(int type, int first, int third){
-  printf("%d %d \n", first, third);
   if(first != type || third != type){
     imprimeErro("Erro de sintaxe.");
   }
+}
+
+void nextLabel(char* label){
+  sprintf(label,"R%02d",labelCount);
+  labelCount++;
 } 
 
 %}
@@ -107,17 +114,17 @@ lista_id_var: lista_id_var VIRGULA identificador
 
 identificador: IDENT
               {
-                Symbol newSymbol;
-                strcpy(newSymbol.name,token);
-                newSymbol.category = category;
-                newSymbol.lexicalLevel = lexicalLevel;
-                newSymbol.displacement = idCount;                
+                Symbol *newSymbol = (Symbol*)malloc(sizeof(Symbol));
+                strcpy(newSymbol->name,token);
+                newSymbol->category = category;
+                newSymbol->lexicalLevel = lexicalLevel;
+                newSymbol->displacement = idCount;                
 
-                Type type;
-                type.primitiveType = INT;
-                type.isReference = 0;
-                newSymbol.types = &type;
-                newSymbol.typesSize = 1;
+                Type *type = (Type*)malloc(sizeof(Type));
+                type->primitiveType = INT;
+                type->isReference = 0;
+                newSymbol->types = type;
+                newSymbol->typesSize = 1;
                 
                 push(newSymbol,&symbolTable);
                 idCount++;
@@ -162,7 +169,6 @@ atribuicao: variavel ATRIBUICAO expressao
                 sprintf(armz,"ARMZ %s", $1);
                 geraCodigo(NULL, armz);
               }
-              printf("expr = %d", $3);
             }
 ;
 
@@ -175,30 +181,12 @@ expressao: expr_e relacao expr_e
          | expr_e {$$ = $1;}
 ;
 
-relacao: MAIOR
-         {
-          strcpy($$,"CMMA");
-         } 
-       | MENOR 
-         {
-          strcpy($$,"CMME");
-         } 
-       | MAIOR_IGUAL 
-         {
-          strcpy($$,"CMAG");
-         } 
-       | MENOR_IGUAL
-         {
-          strcpy($$,"CMEG");
-         } 
-       | IGUAL 
-         {
-          strcpy($$,"CMIG");
-         } 
-       | DIFERENTE
-         {
-          strcpy($$,"CMDG");
-         } 
+relacao: MAIOR { strcpy($$,"CMMA"); } 
+       | MENOR { strcpy($$,"CMME"); } 
+       | MAIOR_IGUAL { strcpy($$,"CMAG"); } 
+       | MENOR_IGUAL { strcpy($$,"CMEG"); } 
+       | IGUAL { strcpy($$,"CMIG"); } 
+       | DIFERENTE { strcpy($$,"CMDG"); } 
 ;
 
 expr_e: expr_e MAIS expr_t 
@@ -243,10 +231,7 @@ expr_t: expr_t VEZES expr_f
       | expr_f {$$ = $1;}
 ;
 
-expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES
-        {
-          $$ = $2;
-        }
+expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES { $$ = $2; }
       | constante 
         {
           char crct[CMD_MAX];
@@ -270,7 +255,6 @@ variavel: IDENT
               imprimeErro("Símbolo inexistente.");
             }else{
               sprintf($$, "%d,%d", symbol->lexicalLevel, symbol->displacement);
-              printf("\nint %s \n\n", $$);
             }
           }
 ;
@@ -279,43 +263,66 @@ constante: NUMERO
            {
             strcpy($$,token);
             constType = INT;
-            printf("\n int %s %d \n\n", $$, constType);
            }
          | TRUE
            {
             strcpy($$,"1");
             constType = BOOL;
-            printf("\n bool %s %d \n\n", $$, constType);
            }
          | FALSE 
            {
             strcpy($$,"0");
             constType = BOOL;
-            printf("\n bool %s %d \n\n", $$, constType);
            }
 ;
 
 repetitivo: WHILE
-            { /* rot_in = proxRot();
-              geraCodigo(rot_in, "NADA");*/
-            } expressao DO
-            {/* rot_out = proxRot();
-              char dsvf[10];
-              sprintf(dsvf, "DSVF %d", rot_in);
-              geraCodigo(NULL, dsvf);*/
-            } comando_sem_rotulo
+            { 
+              nextLabel(labelWhileStart);
+              geraCodigo(labelWhileStart, "NADA");
+            } 
+            expressao DO
+            {
+              nextLabel(labelWhileEnd);
+              char dsvf[CMD_MAX];
+              sprintf(dsvf,"DSVF %s",labelWhileEnd);
+              geraCodigo(NULL, dsvf);
+            }
+            comando_sem_rotulo
+            {
+              char dsvs[CMD_MAX];
+              sprintf(dsvs,"DSVS %s",labelWhileStart);
+              geraCodigo(NULL, dsvs);
+              geraCodigo(labelWhileEnd, "NADA");
+            }
 ;
 
 condicional: IF expressao THEN
-            { /*DSVF rot_else*/ }
+            { 
+              nextLabel(labelElse);
+              char dsvf[CMD_MAX];
+              sprintf(dsvf,"DSVF %s",labelElse);
+              geraCodigo(NULL, dsvf);
+            }
             comando_sem_rotulo cond_else
-            {/*rot_fim_if*/}
 ;
 
-cond_else: ELSE comando_sem_rotulo
-          { /*DSVS rot_fim_if;
-              rot_else*/ }
+cond_else: ELSE
+           {
+             nextLabel(labelIfEnd);
+             char dsvs[CMD_MAX];
+             sprintf(dsvs,"DSVS %s",labelIfEnd);
+             geraCodigo(NULL, dsvs);
+             geraCodigo(labelElse, "NADA");
+           }
+           comando_sem_rotulo
+           {
+             geraCodigo(labelIfEnd, "NADA");
+           }
          | %prec LOWER_THAN_ELSE
+           {
+             geraCodigo(labelElse, "NADA");
+           }
 ;
 
 desvio: GOTO NUMERO
@@ -378,7 +385,8 @@ int main (int argc, char** argv) {
 /* -------------------------------------------------------------------
  *  Inicia a Tabela de Símbolos
  * ------------------------------------------------------------------- */
-  startSymbolTable(&symbolTable);
+  startStack(&symbolTable);
+  startStack(&labels);
 
    yyin=fp;
    yyparse();
