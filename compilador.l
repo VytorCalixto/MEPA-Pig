@@ -164,7 +164,7 @@ label { simbolo = simb_label;
           return VEZES;  
  }
 
-\\ { simbolo = simb_dividido;  
+\/ { simbolo = simb_dividido;  
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" dividido  ");
           return DIVIDIDO;  

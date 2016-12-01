@@ -18,7 +18,7 @@ SymbolTable symbolTable;
 int lexicalLevel = 0;
 int idCount = 0;
 int category = VS;
-
+int constType = -1;
 
 void verifyType(int type, int first, int third){
   printf("%d %d \n", first, third);
@@ -30,7 +30,7 @@ void verifyType(int type, int first, int third){
 %}
 
 %union {
-  CommandType command;
+  char string[CMD_MAX];
   int integer;
 }
 
@@ -43,7 +43,7 @@ void verifyType(int type, int first, int third){
 %token MAIS MENOS VEZES DIVIDIDO OR AND TRUE FALSE
 
 %type <integer> expressao expr_e expr_t expr_f
-%type <command> relacao constante variavel
+%type <string> relacao constante variavel
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -159,7 +159,7 @@ atribuicao: variavel ATRIBUICAO expressao
                 imprimeErro("Erro de sintaxe");
               }else{
                 char armz[CMD_MAX];
-                sprintf(armz,"ARMZ %s", $1.value);
+                sprintf(armz,"ARMZ %s", $1);
                 geraCodigo(NULL, armz);
               }
               printf("expr = %d", $3);
@@ -169,53 +169,35 @@ atribuicao: variavel ATRIBUICAO expressao
 expressao: expr_e relacao expr_e 
            {
             verifyType(INT, $1, $3);
-            geraCodigo(NULL, $2.value);
-            $$ = $2.type;
+            geraCodigo(NULL, $2);
+            $$ = BOOL;
            }
          | expr_e {$$ = $1;}
 ;
 
 relacao: MAIOR
          {
-          CommandType ct;
-          strcpy(ct.value,"CMMA");
-          ct.type = BOOL;
-          $$ = ct;
+          strcpy($$,"CMMA");
          } 
        | MENOR 
          {
-          CommandType ct;
-          strcpy(ct.value,"CMME");
-          ct.type = BOOL;
-          $$ = ct;
+          strcpy($$,"CMME");
          } 
        | MAIOR_IGUAL 
          {
-          CommandType ct;
-          strcpy(ct.value,"CMAG");
-          ct.type = BOOL;
-          $$ = ct;
+          strcpy($$,"CMAG");
          } 
        | MENOR_IGUAL
          {
-          CommandType ct;
-          strcpy(ct.value,"CMEG");
-          ct.type = BOOL;
-          $$ = ct;
+          strcpy($$,"CMEG");
          } 
        | IGUAL 
          {
-          CommandType ct;
-          strcpy(ct.value,"CMIG");
-          ct.type = BOOL;
-          $$ = ct;
+          strcpy($$,"CMIG");
          } 
        | DIFERENTE
          {
-          CommandType ct;
-          strcpy(ct.value,"CMDG");
-          ct.type = BOOL;
-          $$ = ct;
+          strcpy($$,"CMDG");
          } 
 ;
 
@@ -268,16 +250,16 @@ expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES
       | constante 
         {
           char crct[CMD_MAX];
-          sprintf(crct,"CRCT %s", $1.value);
+          sprintf(crct,"CRCT %s", $1);
           geraCodigo(NULL, crct);
-          $$ = $1.type;
+          $$ = constType;
         }
       | variavel
         {
           char crvl[CMD_MAX];
-          sprintf(crvl,"CRVL %s", $1.value);
+          sprintf(crvl,"CRVL %s", $1);
           geraCodigo(NULL, crvl);
-          $$ = $1.type;
+          $$ = INT;
         }
 ;
 
@@ -287,38 +269,29 @@ variavel: IDENT
             if(symbol == NULL){
               imprimeErro("Símbolo inexistente.");
             }else{
-              CommandType var;
-              sprintf(var.value, "%d,%d", symbol->lexicalLevel, symbol->displacement);
-              var.type = INT;
-              $$ = var;
-              printf("int %s %d \n", $$.value, $$.type);
+              sprintf($$, "%d,%d", symbol->lexicalLevel, symbol->displacement);
+              printf("\nint %s \n\n", $$);
             }
           }
 ;
 
 constante: NUMERO
            {
-            CommandType cte;
-            strcpy(cte.value,token);
-            cte.type = INT;
-            $$ = cte;
-            printf("int %s %d \n", $$.value, $$.type);
+            strcpy($$,token);
+            constType = INT;
+            printf("\n int %s %d \n\n", $$, constType);
            }
          | TRUE
            {
-            CommandType cte;
-            strcpy(cte.value,"1");
-            cte.type = BOOL;
-            $$ = cte;
-            printf("bool %s %d \n", $$.value, $$.type);
+            strcpy($$,"1");
+            constType = BOOL;
+            printf("\n bool %s %d \n\n", $$, constType);
            }
          | FALSE 
            {
-            CommandType cte;
-            strcpy(cte.value,"0");
-            cte.type = BOOL;
-            $$ = cte;
-            printf("bool %s %d \n", $$.value, $$.type);
+            strcpy($$,"0");
+            constType = BOOL;
+            printf("\n bool %s %d \n\n", $$, constType);
            }
 ;
 

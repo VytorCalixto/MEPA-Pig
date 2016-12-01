@@ -15,11 +15,6 @@
 
 //----- Adiconado por Israel B. Sant'Anna -----
 #define CMD_MAX 10
-
-typedef struct CommandType{
-  char value[CMD_MAX];
-  int type;
-}CommandType;
 //---------------------------------------------
 
 typedef enum simbolos { 
