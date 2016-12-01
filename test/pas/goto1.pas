@@ -1,10 +1,10 @@
 (* Simple GoTo test *)
 program p(input, output);
-var a, b: integer;
 label 100;
+var a, b: integer;
 begin
     a := 2;
     goto 100;
     b := 5;
-    100: write(a,b)
+    100: a := 3;
 end.

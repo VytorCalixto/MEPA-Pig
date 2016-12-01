@@ -11,6 +11,7 @@ typedef struct Symbol{
   int category;
   int typesSize;
   Type *types;
+  char *label;
   char name[TAM_TOKEN];
 }Symbol;
 

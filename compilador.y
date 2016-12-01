@@ -17,7 +17,6 @@
 Stack symbolTable, labels;
 int lexicalLevel = 0;
 int idCount = 0;
-int category = VS;
 int constType = -1;
 int labelCount = 0;
 
@@ -114,7 +113,7 @@ identificador: IDENT
               {
                 Symbol *newSymbol = (Symbol*)malloc(sizeof(Symbol));
                 strcpy(newSymbol->name,token);
-                newSymbol->category = category;
+                newSymbol->category = VS;
                 newSymbol->lexicalLevel = lexicalLevel;
                 newSymbol->displacement = idCount;                
 
@@ -145,10 +144,6 @@ comandos: comandos comando PONTO_E_VIRGULA
 ;
 
 comando: rotulo comando_sem_rotulo
-;
-
-rotulo: NUMERO DOIS_PONTOS
-      | /*regra opcional*/
 ;
 
 comando_sem_rotulo: atribuicao
@@ -250,7 +245,7 @@ variavel: IDENT
           { 
             Symbol* symbol = findSymbol(token, &symbolTable);
             if(symbol == NULL){
-              imprimeErro("Símbolo inexistente.");
+              imprimeErro("Variável inexistente.");
             }else{
               sprintf($$, "%d,%d", symbol->lexicalLevel, symbol->displacement);
             }
@@ -278,7 +273,6 @@ repetitivo: WHILE
             { 
               char *labelStart = (char*)malloc(sizeof(char)*CMD_MAX);
               nextLabel(labelStart);
-              printf("\n\n ----- nextLabel %s \n\n",labelStart);
               push(labelStart,&labels);
               geraCodigo(labelStart, "NADA");
             } 
@@ -295,7 +289,6 @@ repetitivo: WHILE
             {
               char *labelEnd = (char*)pop(&labels);
               char *labelStart = (char*)pop(&labels);
-              printf("\n\n ----- pop %s \n\n",labelStart);
               if(labelStart == NULL || labelEnd == NULL) 
                 imprimeErro("Pilha vazia");
               char dsvs[CMD_MAX];
@@ -349,14 +342,55 @@ cond_else: ELSE
            }
 ;
 
+parte_declara_rotulos: LABEL rotulos PONTO_E_VIRGULA 
+                     |
+;
+
+rotulos: rotulos VIRGULA id_rotulo
+       | id_rotulo
+;
+
+id_rotulo: NUMERO
+        {
+          Symbol *newSymbol = (Symbol*)malloc(sizeof(Symbol));
+          strcpy(newSymbol->name,token);
+          newSymbol->category = LABL;
+          newSymbol->lexicalLevel = lexicalLevel;
+
+          char *label = (char*)malloc(sizeof(char)*CMD_MAX);
+          nextLabel(label);
+          newSymbol->label = label;
+          
+          push(newSymbol,&symbolTable);
+        }
+;
+
+rotulo: NUMERO
+        {
+          Symbol* symbol = findSymbol(token, &symbolTable);
+          if(symbol == NULL){
+            imprimeErro("Rótulo inexistente.");
+          }else{
+            char enrt[CMD_MAX];
+            sprintf(enrt,"ENRT %d,%d",lexicalLevel,idCount);
+            geraCodigo(symbol->label, enrt);
+          }
+        }
+        DOIS_PONTOS
+      | 
+;
+
 desvio: GOTO NUMERO
-;
-
-parte_declara_rotulos: LABEL rotulos PONTO_E_VIRGULA |
-;
-
-rotulos: rotulos VIRGULA NUMERO
-       | NUMERO
+        {
+          Symbol* symbol = findSymbol(token, &symbolTable);
+          if(symbol == NULL){
+            imprimeErro("Rótulo inexistente.");
+          }else{
+            char dsvr[CMD_MAX];
+            sprintf(dsvr,"DSVR %s,%d,%d",symbol->label,symbol->lexicalLevel,lexicalLevel);
+            geraCodigo(NULL, dsvr);
+          }
+        }
 ;
 
 parte_declara_subrotinas: declara_proc
