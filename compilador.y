@@ -20,6 +20,8 @@ int idCount = 0;
 int constType = -1;
 int labelCount = 0;
 
+char currentProc[TAM_TOKEN];
+
 void verifyType(int type, int first, int third){
   if(first != type || third != type){
     imprimeErro("Erro de sintaxe.");
@@ -69,10 +71,18 @@ bloco:  parte_declara_rotulos
         parte_declara_vars
         {
           lexicalLevel++;
+          char dsvs[CMD_MAX];
+          char *label = (char*)malloc(sizeof(char)*CMD_MAX);
+          nextLabel(label);
+          push(label,&labels);
+          sprintf(dsvs,"DSVS %s",label);
+          geraCodigo(NULL, dsvs);
         }
         parte_declara_subrotinas 
         {
           lexicalLevel--;
+          char *label = (char*)pop(&labels);
+          geraCodigo(label, "NADA");
         }
         comando_composto 
         {
@@ -401,7 +411,23 @@ parte_declara_subrotinas: declara_proc
 declara_proc: PROCEDURE declara_subrotina
 ;
 
-declara_subrotina: IDENT param_formais PONTO_E_VIRGULA bloco
+declara_subrotina: IDENT
+                   {
+                     Symbol *newSymbol = (Symbol*)malloc(sizeof(Symbol));
+                     strcpy(newSymbol->name,token);
+                     newSymbol->category = PROC;
+                     newSymbol->lexicalLevel = lexicalLevel;
+
+                     char *label = (char*)malloc(sizeof(char)*CMD_MAX);
+                     nextLabel(label);
+                     newSymbol->label = label;
+                     
+                     push(newSymbol,&symbolTable);
+                     
+                     strcpy(currentProc,newSymbol->name);
+                     idCount++;
+                   }
+                   param_formais PONTO_E_VIRGULA bloco
 ;
 
 param_formais: ABRE_PARENTESES secoes_param_formais FECHA_PARENTESES
