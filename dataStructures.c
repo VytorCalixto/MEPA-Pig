@@ -10,7 +10,7 @@ typedef struct Symbol{
   int displacement;
   int category;
   int typesSize;
-  Type *types;
+  Type **types;
   char *label;
   char name[TAM_TOKEN];
 }Symbol;
@@ -79,4 +79,33 @@ Symbol* findSymbol(char name[TAM_TOKEN], Stack *stack){
     }
   }
   return NULL;
+}
+
+Symbol** lastSymbols(int n, Stack *stack){
+  Symbol** lastSymbols = (Symbol**)malloc(sizeof(Symbol*)*n);
+  int i = 0;
+  for(StackNode* iter=stack->head; iter != NULL && i < n; iter=iter->next){
+    Symbol* symbol = (Symbol*)iter->element;
+    lastSymbols[i] = symbol;
+    i++;
+  }
+  if(i < n){
+    return NULL;
+  }
+  return lastSymbols;
+}
+
+
+int countLevelSymbols(int category, int lexicalLevel, Stack *stack){
+  int i = 0;
+  for(StackNode* iter=stack->head;
+      iter != NULL;
+      iter=iter->next){
+    Symbol* symbol = (Symbol*)iter->element;
+    printf("\n\n symbol %s, category %d, lexicalLevel %d \n\n",symbol->name, symbol->category, symbol->lexicalLevel);
+    if(symbol->category == category && symbol->lexicalLevel == lexicalLevel){
+      i++;
+    }
+  }
+  return i;
 }

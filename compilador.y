@@ -16,11 +16,12 @@
 
 Stack symbolTable, labels;
 int lexicalLevel = 0;
-int idCount = 0;
-int constType = -1;
+int typeCount = 0;
 int labelCount = 0;
-
-char currentProc[TAM_TOKEN];
+int subRoutineType = -1;
+int constType = -1;
+int category = -1;
+int isReference = -1;
 
 void verifyType(int type, int first, int third){
   if(first != type || third != type){
@@ -69,37 +70,29 @@ programa: {
 
 bloco:  parte_declara_rotulos
         parte_declara_vars
-        {
-          lexicalLevel++;
-          char dsvs[CMD_MAX];
-          char *label = (char*)malloc(sizeof(char)*CMD_MAX);
-          nextLabel(label);
-          push(label,&labels);
-          sprintf(dsvs,"DSVS %s",label);
-          geraCodigo(NULL, dsvs);
-        }
-        parte_declara_subrotinas 
-        {
-          lexicalLevel--;
-          char *label = (char*)pop(&labels);
-          geraCodigo(label, "NADA");
-        }
+        parte_declara_subrotinas
         comando_composto 
         {
+          int count = countLevelSymbols(VS,lexicalLevel,&symbolTable);
+          printf("\n\n count %d \n\n",count);
+          if(count > 0){
+            char dmem[CMD_MAX];
+            sprintf(dmem,"DMEM %d", count);
+            geraCodigo(NULL, dmem);
+          }
           clearLevel(lexicalLevel, &symbolTable);
-          char dmem[CMD_MAX];
-          sprintf(dmem,"DMEM %d", idCount);
-          geraCodigo(NULL, dmem);
         }
 ;
 
 parte_declara_vars: {
-                      idCount = 0;
+                      category = VS;
+                      isReference = 0;
                     }
                     VAR declara_vars
                     {
+                      int count = countLevelSymbols(VS,lexicalLevel,&symbolTable);
                       char amem[CMD_MAX];
-                      sprintf(amem,"AMEM %d", idCount);
+                      sprintf(amem,"AMEM %d", count);
                       geraCodigo(NULL, amem);
                     }
                     |
@@ -109,10 +102,26 @@ declara_vars: declara_vars declara_var
             | declara_var 
 ;
 
-declara_var:  lista_id_var DOIS_PONTOS tipo PONTO_E_VIRGULA
+declara_var: secao_var PONTO_E_VIRGULA 
+
+secao_var: {typeCount = 0;}
+           lista_id_var DOIS_PONTOS tipo
 ;
 
 tipo: IDENT
+      {
+        if(strcmp(token,"integer") != 0){
+          imprimeErro("Tipo de variável não permitido.");
+        }else{
+          Symbol** vars = lastSymbols(typeCount,&symbolTable);
+          if(vars == NULL){
+            imprimeErro("Erro na tabela de símbolos.");
+          }
+          for(int i = 0; i < typeCount; i++){
+            vars[i]->types[0]->primitiveType = INT;
+          }
+        }
+      }
 ;
 
 lista_id_var: lista_id_var VIRGULA identificador 
@@ -123,18 +132,20 @@ identificador: IDENT
               {
                 Symbol *newSymbol = (Symbol*)malloc(sizeof(Symbol));
                 strcpy(newSymbol->name,token);
-                newSymbol->category = VS;
+                newSymbol->category = category;
                 newSymbol->lexicalLevel = lexicalLevel;
-                newSymbol->displacement = idCount;                
+                int count = countLevelSymbols(category,lexicalLevel,&symbolTable);
+                newSymbol->displacement = count;
 
+                Type **types = (Type**)malloc(sizeof(Type*));
                 Type *type = (Type*)malloc(sizeof(Type));
-                type->primitiveType = INT;
-                type->isReference = 0;
-                newSymbol->types = type;
+                type->isReference = isReference;
+                types[0] = type;
+                newSymbol->types = types;
                 newSymbol->typesSize = 1;
                 
                 push(newSymbol,&symbolTable);
-                idCount++;
+                typeCount++;
               }
 ;
 
@@ -382,7 +393,8 @@ rotulo: NUMERO
             imprimeErro("Rótulo inexistente.");
           }else{
             char enrt[CMD_MAX];
-            sprintf(enrt,"ENRT %d,%d",lexicalLevel,idCount);
+            int count = countLevelSymbols(VS,lexicalLevel,&symbolTable);
+            sprintf(enrt,"ENRT %d,%d",lexicalLevel,count);
             geraCodigo(symbol->label, enrt);
           }
         }
@@ -408,29 +420,72 @@ parte_declara_subrotinas: declara_proc
                         |
 ;
 
-declara_proc: PROCEDURE declara_subrotina
+declara_proc: PROCEDURE {subRoutineType = PROC;} declara_subrotina
 ;
 
 declara_subrotina: IDENT
                    {
+                     lexicalLevel++;
+                     char dsvs[CMD_MAX];
+                     char *labelBegin = (char*)malloc(sizeof(char)*CMD_MAX);
+                     nextLabel(labelBegin);
+                     push(labelBegin,&labels);
+                     sprintf(dsvs,"DSVS %s",labelBegin);
+                     geraCodigo(NULL, dsvs);
+
                      Symbol *newSymbol = (Symbol*)malloc(sizeof(Symbol));
                      strcpy(newSymbol->name,token);
-                     newSymbol->category = PROC;
+                     newSymbol->category = subRoutineType;
                      newSymbol->lexicalLevel = lexicalLevel;
 
-                     char *label = (char*)malloc(sizeof(char)*CMD_MAX);
-                     nextLabel(label);
-                     newSymbol->label = label;
+                     char *labelSubRoutine = (char*)malloc(sizeof(char)*CMD_MAX);
+                     nextLabel(labelSubRoutine);
+                     newSymbol->label = labelSubRoutine;
                      
                      push(newSymbol,&symbolTable);
                      
-                     strcpy(currentProc,newSymbol->name);
-                     idCount++;
+                     category = PF;
+
+                     char enpr[CMD_MAX];
+                     sprintf(enpr,"ENPR %d",lexicalLevel);
+                     geraCodigo(newSymbol->label, enpr);
                    }
-                   param_formais PONTO_E_VIRGULA bloco
+                   param_formais
+                   {
+                     int count = countLevelSymbols(PF,lexicalLevel,&symbolTable);
+                     Symbol** vars = lastSymbols(count+1,&symbolTable);
+                     if(vars == NULL){
+                       imprimeErro("Erro na tabela de símbolos.");
+                     }
+                     Symbol* subRoutine = vars[count];
+                     subRoutine->types = (Type**)malloc(sizeof(Type*)*count);
+
+                     for(int i = 0; i < count; i++){
+                       vars[i]->displacement = -4-(i);
+                       subRoutine->types[i] = vars[i]->types[0];
+                     }
+                     subRoutine->typesSize = count;
+                   }
+                   PONTO_E_VIRGULA bloco PONTO_E_VIRGULA
+                   {
+                     Symbol** symArray = lastSymbols(1,&symbolTable);
+                     if(symArray == NULL){
+                       imprimeErro("Erro na tabela de símbolos.");
+                     }
+                     Symbol* subRoutine = symArray[0];
+                     char rtpr[CMD_MAX];
+                     sprintf(rtpr,"RTPR %d,%d",lexicalLevel,subRoutine->typesSize);
+                     geraCodigo(NULL, rtpr);
+
+                     lexicalLevel--;
+                     char *label = (char*)pop(&labels);
+                     geraCodigo(label, "NADA");
+                   }
 ;
 
-param_formais: ABRE_PARENTESES secoes_param_formais FECHA_PARENTESES
+param_formais: ABRE_PARENTESES secoes_param_formais 
+               secao_params FECHA_PARENTESES
+             | ABRE_PARENTESES secao_params FECHA_PARENTESES
              | /*regra opcional*/
 ;
 
@@ -438,15 +493,27 @@ secoes_param_formais: secoes_param_formais secao_param_formais
                     | secao_param_formais
 ;
 
-secao_param_formais: var_subrotina lista_id_var DOIS_PONTOS tipo
+secao_param_formais: secao_params PONTO_E_VIRGULA
 ;
 
-var_subrotina: VAR | /*regra opcional*/
+secao_params: var_subrotina secao_var
 ;
 
-declara_func: FUNCTION declara_subrotina
+var_subrotina: VAR { isReference = 1; }
+             | { isReference = 0; }
+;
 
-//chama_func: //TODO
+declara_func: FUNCTION {subRoutineType = FUNC;} declara_subrotina
+
+//chama_subrotina: IDENT params
+//;
+//
+//params: ABRE_PARENTESES param_reais FECHA_PARENTESES
+//      |
+//;
+//
+//param_reais: expr_e
+//;
 
 %%
 
