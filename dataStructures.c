@@ -53,6 +53,18 @@ void* pop(Stack *stack){
   }
 }
 
+void* getByReversedIndex(int index, Stack *stack){
+  int i = 0;
+  StackNode* iter=stack->head;
+  for(; iter != NULL && i < index; iter=iter->next){
+    i++;
+  }
+  if(iter == NULL){
+    return NULL;
+  }
+  return iter->element;
+}
+
 void clearLevel(int lexicalLevel, Stack *stack){
   if(!emptyStack(stack)){
     StackNode* iter = stack->head;
@@ -94,7 +106,6 @@ Symbol** lastSymbols(int n, Stack *stack){
   }
   return lastSymbols;
 }
-
 
 int countLevelSymbols(int category, int lexicalLevel, Stack *stack){
   int i = 0;

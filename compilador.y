@@ -420,7 +420,8 @@ parte_declara_subrotinas: declara_proc
                         |
 ;
 
-declara_proc: PROCEDURE {subRoutineType = PROC;} declara_subrotina
+declara_proc: PROCEDURE {subRoutineType = PROC;} 
+              declara_subrotina bloco_subrotina
 ;
 
 declara_subrotina: IDENT
@@ -461,12 +462,14 @@ declara_subrotina: IDENT
                      subRoutine->types = (Type**)malloc(sizeof(Type*)*count);
 
                      for(int i = 0; i < count; i++){
-                       vars[i]->displacement = -4-(i);
+                       vars[i]->displacement = -4-i;
                        subRoutine->types[i] = vars[i]->types[0];
                      }
                      subRoutine->typesSize = count;
                    }
-                   PONTO_E_VIRGULA bloco PONTO_E_VIRGULA
+;
+
+bloco_subrotina: PONTO_E_VIRGULA bloco PONTO_E_VIRGULA
                    {
                      Symbol** symArray = lastSymbols(1,&symbolTable);
                      if(symArray == NULL){
@@ -486,7 +489,7 @@ declara_subrotina: IDENT
 param_formais: ABRE_PARENTESES secoes_param_formais 
                secao_params FECHA_PARENTESES
              | ABRE_PARENTESES secao_params FECHA_PARENTESES
-             | /*regra opcional*/
+             |
 ;
 
 secoes_param_formais: secoes_param_formais secao_param_formais
@@ -503,7 +506,35 @@ var_subrotina: VAR { isReference = 1; }
              | { isReference = 0; }
 ;
 
-declara_func: FUNCTION {subRoutineType = FUNC;} declara_subrotina
+declara_func: FUNCTION {subRoutineType = FUNC;} 
+              declara_subrotina DOIS_PONTOS tipo_func
+              bloco_subrotina
+;
+
+tipo_func:  IDENT
+            {
+              if(strcmp(token,"integer") != 0){
+                imprimeErro("Tipo de função não permitido.");
+              }else{
+                int count = countLevelSymbols(PF,lexicalLevel,&symbolTable);
+                Symbol* func = (Symbol*)getByReversedIndex(count,&symbolTable);
+                if(func == NULL){
+                  imprimeErro("Erro na tabela de símbolos.");
+                }
+
+
+                Type *type = (Type*)malloc(sizeof(Type));
+                type->isReference = 0;
+                type->primitiveType = INT;
+
+                func->typesSize = func->typesSize+1;
+                func->types = (Type**)realloc(func->types,sizeof(Type*)*func->typesSize);
+                func->types[func->typesSize] = type;
+
+                func->displacement = -4-count;
+              }
+            }
+  ;
 
 //chama_subrotina: IDENT params
 //;
