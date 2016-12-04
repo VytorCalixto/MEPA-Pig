@@ -14,7 +14,7 @@
 #include "definitions.h"
 
 
-Stack symbolTable, labels;
+Stack symbolTable, labels, params;
 int lexicalLevel = 0;
 int typeCount = 0;
 int labelCount = 0;
@@ -34,11 +34,42 @@ void nextLabel(char* label){
   labelCount++;
 } 
 
+Symbol* getSymbol(char name[TAM_TOKEN]){
+  Symbol* symbol = findSymbol(name, &symbolTable);
+  if(symbol == NULL){
+    imprimeErro("Símbolo inexistente.");
+  }
+  return symbol;
+}
+
+void generateExprCode(Expr expr, int loadAddress){
+  if(expr.value[0] != '\0'){
+    if(expr.exprType == VARIABLE){
+      Symbol* var = getSymbol(expr.value);
+      char cr[CMD_MAX];
+      if((loadAddress && var->types[0]->isReference)
+          ||(!loadAddress && !var->types[0]->isReference)){
+        sprintf(cr,"CRVL %d,%d", var->lexicalLevel, var->displacement);
+      }else if(loadAddress){
+        sprintf(cr,"CREN %d,%d", var->lexicalLevel, var->displacement);
+      }else{
+        sprintf(cr,"CRVI %d,%d", var->lexicalLevel, var->displacement);
+      }
+      geraCodigo(NULL, cr);
+    }else if(expr.exprType == CONSTANT){
+      char crct[CMD_MAX];
+      sprintf(crct,"CRCT %s", expr.value);
+      geraCodigo(NULL, crct);
+    }else if(expr.exprType == COMMAND){
+      geraCodigo(NULL, expr.value);
+    }
+  }
+}
+
 %}
 
 %union {
-  char string[CMD_MAX];
-  int integer;
+  Expr expr;
 }
 
 %token PROGRAM ABRE_PARENTESES FECHA_PARENTESES 
@@ -49,8 +80,7 @@ void nextLabel(char* label){
 %token PROCEDURE FUNCTION GOTO LABEL NUMERO
 %token MAIS MENOS VEZES DIVIDIDO OR AND TRUE FALSE
 
-%type <integer> expressao expr_e expr_t expr_f
-%type <string> relacao constante variavel
+%type <expr> expressao expr_e expr_t expr_f relacao constante variavel chamada_subrotina
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -74,7 +104,6 @@ bloco:  parte_declara_rotulos
         comando_composto 
         {
           int count = countLevelSymbols(VS,lexicalLevel,&symbolTable);
-          printf("\n\n count %d \n\n",count);
           if(count > 0){
             char dmem[CMD_MAX];
             sprintf(dmem,"DMEM %d", count);
@@ -172,122 +201,204 @@ comando_sem_rotulo: atribuicao
                   | comando_composto
                   | condicional
                   | repetitivo
+                  | chamada_subrotina
 ;
 
 atribuicao: variavel ATRIBUICAO expressao
             {
-              if($3 != INT){
+              if($3.primitiveType != INT){
                 imprimeErro("Erro de sintaxe");
               }else{
-                char armz[CMD_MAX];
-                sprintf(armz,"ARMZ %s", $1);
-                geraCodigo(NULL, armz);
+                generateExprCode($3,0);
+                Symbol* var = getSymbol($1.value);
+                char arm[CMD_MAX];
+                if(var->types[0]->isReference){
+                  sprintf(arm,"ARMI %d,%d",var->lexicalLevel,var->displacement);
+                }else{
+                  sprintf(arm,"ARMZ %d,%d",var->lexicalLevel,var->displacement);
+                }
+                geraCodigo(NULL, arm);
               }
             }
 ;
 
-expressao: expr_e relacao expr_e 
-           {
-            verifyType(INT, $1, $3);
-            geraCodigo(NULL, $2);
-            $$ = BOOL;
-           }
+expressao:  expr_e relacao expr_e 
+            {
+              verifyType(INT, $1.primitiveType, $3.primitiveType);
+              generateExprCode($1,0);
+              generateExprCode($3,0);
+              generateExprCode($2,0);
+              Expr cmd;
+              cmd.value[0] = '\0';
+              cmd.primitiveType=BOOL;
+              cmd.exprType=COMMAND;
+              $$=cmd;
+            }
          | expr_e {$$ = $1;}
 ;
 
-relacao: MAIOR { strcpy($$,"CMMA"); } 
-       | MENOR { strcpy($$,"CMME"); } 
-       | MAIOR_IGUAL { strcpy($$,"CMAG"); } 
-       | MENOR_IGUAL { strcpy($$,"CMEG"); } 
-       | IGUAL { strcpy($$,"CMIG"); } 
-       | DIFERENTE { strcpy($$,"CMDG"); } 
+relacao:  MAIOR
+          {
+            Expr cmd;
+            strcpy(cmd.value,"CMMA");
+            cmd.primitiveType=BOOL;
+            cmd.exprType=COMMAND;
+            $$=cmd;
+          } 
+       |  MENOR
+          {
+            Expr cmd;
+            strcpy(cmd.value,"CMME");
+            cmd.primitiveType=BOOL;
+            cmd.exprType=COMMAND;
+            $$=cmd;
+          } 
+       |  MAIOR_IGUAL
+          {
+            Expr cmd;
+            strcpy(cmd.value,"CMAG");
+            cmd.primitiveType=BOOL;
+            cmd.exprType=COMMAND;
+            $$=cmd;
+          } 
+       |  MENOR_IGUAL 
+          {
+            Expr cmd;
+            strcpy(cmd.value,"CMEG");
+            cmd.primitiveType=BOOL;
+            cmd.exprType=COMMAND;
+            $$=cmd;
+          } 
+       |  IGUAL 
+          {
+            Expr cmd;
+            strcpy(cmd.value,"CMIG");
+            cmd.primitiveType=BOOL;
+            cmd.exprType=COMMAND;
+            $$=cmd;
+          } 
+       |  DIFERENTE 
+          {
+            Expr cmd;
+            strcpy(cmd.value,"CMDG");
+            cmd.primitiveType=BOOL;
+            cmd.exprType=COMMAND;
+            $$=cmd;
+          } 
 ;
 
 expr_e: expr_e MAIS expr_t 
         { 
-          verifyType(INT, $1, $3);
-          $$ = INT;
-          geraCodigo(NULL, "SOMA");
+          verifyType(INT, $1.primitiveType, $3.primitiveType);
+          generateExprCode($1,0);
+          generateExprCode($3,0);
+          Expr cmd;
+          strcpy(cmd.value,"SOMA");
+          cmd.primitiveType=INT;
+          cmd.exprType=COMMAND;
+          $$=cmd;
         }
       | expr_e OR expr_t 
         { 
-          verifyType(BOOL, $1, $3);
-          $$ = BOOL;
-          geraCodigo(NULL, "DISJ");
+          verifyType(BOOL, $1.primitiveType, $3.primitiveType);
+          generateExprCode($1,0);
+          generateExprCode($3,0);
+          Expr cmd;
+          strcpy(cmd.value,"DISJ");
+          cmd.primitiveType=BOOL;
+          cmd.exprType=COMMAND;
+          $$=cmd;
         }
       | expr_e MENOS expr_t 
-        { 
-          verifyType(INT, $1, $3);
-          $$ = INT;
-          geraCodigo(NULL, "SUBT");
+        {
+          verifyType(INT, $1.primitiveType, $3.primitiveType);
+          generateExprCode($1,0);
+          generateExprCode($3,0);
+          Expr cmd;
+          strcpy(cmd.value,"SUBT");
+          cmd.primitiveType=INT;
+          cmd.exprType=COMMAND;
+          $$=cmd;
         }
       | expr_t {$$ = $1;}
 ;
 
 expr_t: expr_t VEZES expr_f 
         {
-          verifyType(INT, $1, $3);
-          $$ = INT;
-          geraCodigo(NULL, "MULT");
+          verifyType(INT, $1.primitiveType, $3.primitiveType);
+          generateExprCode($1,0);
+          generateExprCode($3,0);
+          Expr cmd;
+          strcpy(cmd.value,"MULT");
+          cmd.primitiveType=INT;
+          cmd.exprType=COMMAND;
+          $$=cmd;
         }
       | expr_t AND expr_f
         {
-          verifyType(BOOL, $1, $3);
-          $$ = BOOL;
-          geraCodigo(NULL, "CONJ");
+          verifyType(BOOL, $1.primitiveType, $3.primitiveType);
+          generateExprCode($1,0);
+          generateExprCode($3,0);
+          Expr cmd;
+          strcpy(cmd.value,"CONJ");
+          cmd.primitiveType=BOOL;
+          cmd.exprType=COMMAND;
+          $$=cmd;
         }
       | expr_t DIVIDIDO expr_f 
         {
-          verifyType(INT, $1, $3);
-          $$ = INT;
-          geraCodigo(NULL, "DIVI");
+          verifyType(INT, $1.primitiveType, $3.primitiveType);
+          generateExprCode($1,0);
+          generateExprCode($3,0);
+          Expr cmd;
+          strcpy(cmd.value,"DIVI");
+          cmd.primitiveType=INT;
+          cmd.exprType=COMMAND;
+          $$=cmd;
         }
       | expr_f {$$ = $1;}
 ;
 
-expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES { $$ = $2; }
-      | constante 
-        {
-          char crct[CMD_MAX];
-          sprintf(crct,"CRCT %s", $1);
-          geraCodigo(NULL, crct);
-          $$ = constType;
-        }
-      | variavel
-        {
-          char crvl[CMD_MAX];
-          sprintf(crvl,"CRVL %s", $1);
-          geraCodigo(NULL, crvl);
-          $$ = INT;
-        }
+expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {$$ = $2;}
+      | constante {$$=$1;}
+      | variavel {$$=$1;}
+      | chamada_subrotina {$$=$1;}
 ;
 
-variavel: IDENT 
-          { 
-            Symbol* symbol = findSymbol(token, &symbolTable);
-            if(symbol == NULL){
-              imprimeErro("Variável inexistente.");
-            }else{
-              sprintf($$, "%d,%d", symbol->lexicalLevel, symbol->displacement);
-            }
+variavel: IDENT
+          {
+            Expr var;
+            strcpy(var.value,token);
+            var.primitiveType=INT;
+            var.exprType=VARIABLE;
+            $$=var;
           }
 ;
 
-constante: NUMERO
-           {
-            strcpy($$,token);
-            constType = INT;
-           }
-         | TRUE
-           {
-            strcpy($$,"1");
-            constType = BOOL;
-           }
-         | FALSE 
-           {
-            strcpy($$,"0");
-            constType = BOOL;
-           }
+constante:  NUMERO 
+            {
+              Expr cte;
+              strcpy(cte.value,token);
+              cte.primitiveType=INT;
+              cte.exprType=CONSTANT;
+              $$=cte;
+            }
+         |  TRUE
+            {
+              Expr cte;
+              strcpy(cte.value,"1");
+              cte.primitiveType=BOOL;
+              cte.exprType=CONSTANT;
+              $$=cte;
+            }
+         |  FALSE
+            {
+              Expr cte;
+              strcpy(cte.value,"0");
+              cte.primitiveType=BOOL;
+              cte.exprType=CONSTANT;
+              $$=cte;
+            }
 ;
 
 repetitivo: WHILE
@@ -388,15 +499,11 @@ id_rotulo: NUMERO
 
 rotulo: NUMERO
         {
-          Symbol* symbol = findSymbol(token, &symbolTable);
-          if(symbol == NULL){
-            imprimeErro("Rótulo inexistente.");
-          }else{
-            char enrt[CMD_MAX];
-            int count = countLevelSymbols(VS,lexicalLevel,&symbolTable);
-            sprintf(enrt,"ENRT %d,%d",lexicalLevel,count);
-            geraCodigo(symbol->label, enrt);
-          }
+          Symbol* symbol = getSymbol(token);
+          char enrt[CMD_MAX];
+          int count = countLevelSymbols(VS,lexicalLevel,&symbolTable);
+          sprintf(enrt,"ENRT %d,%d",lexicalLevel,count);
+          geraCodigo(symbol->label, enrt);
         }
         DOIS_PONTOS
       | 
@@ -404,14 +511,10 @@ rotulo: NUMERO
 
 desvio: GOTO NUMERO
         {
-          Symbol* symbol = findSymbol(token, &symbolTable);
-          if(symbol == NULL){
-            imprimeErro("Rótulo inexistente.");
-          }else{
-            char dsvr[CMD_MAX];
-            sprintf(dsvr,"DSVR %s,%d,%d",symbol->label,symbol->lexicalLevel,lexicalLevel);
-            geraCodigo(NULL, dsvr);
-          }
+          Symbol* symbol = getSymbol(token);
+          char dsvr[CMD_MAX];
+          sprintf(dsvr,"DSVR %s,%d,%d",symbol->label,symbol->lexicalLevel,lexicalLevel);
+          geraCodigo(NULL, dsvr);
         }
 ;
 
@@ -438,6 +541,8 @@ declara_subrotina: IDENT
                      strcpy(newSymbol->name,token);
                      newSymbol->category = subRoutineType;
                      newSymbol->lexicalLevel = lexicalLevel;
+                     newSymbol->types = NULL;
+                     newSymbol->typesSize = 0;
 
                      char *labelSubRoutine = (char*)malloc(sizeof(char)*CMD_MAX);
                      nextLabel(labelSubRoutine);
@@ -454,30 +559,29 @@ declara_subrotina: IDENT
                    param_formais
                    {
                      int count = countLevelSymbols(PF,lexicalLevel,&symbolTable);
-                     Symbol** vars = lastSymbols(count+1,&symbolTable);
-                     if(vars == NULL){
-                       imprimeErro("Erro na tabela de símbolos.");
-                     }
-                     Symbol* subRoutine = vars[count];
-                     subRoutine->types = (Type**)malloc(sizeof(Type*)*count);
+                     if(count > 0){
+                       Symbol** vars = lastSymbols(count+1,&symbolTable);
+                       if(vars == NULL){
+                         imprimeErro("Erro na tabela de símbolos.");
+                       }
+                       Symbol* subRoutine = vars[count];
+                       subRoutine->types = (Type**)malloc(sizeof(Type*)*count);
 
-                     for(int i = 0; i < count; i++){
-                       vars[i]->displacement = -4-i;
-                       subRoutine->types[i] = vars[i]->types[0];
+                       for(int i = 0; i < count; i++){
+                         vars[i]->displacement = -4-i;
+                         subRoutine->types[i] = vars[i]->types[0];
+                       }
+                       subRoutine->typesSize = count;
                      }
-                     subRoutine->typesSize = count;
                    }
 ;
 
 bloco_subrotina: PONTO_E_VIRGULA bloco PONTO_E_VIRGULA
                    {
-                     Symbol** symArray = lastSymbols(1,&symbolTable);
-                     if(symArray == NULL){
-                       imprimeErro("Erro na tabela de símbolos.");
-                     }
-                     Symbol* subRoutine = symArray[0];
+                     Symbol* subRoutine = (Symbol*)getByReversedIndex(0,&symbolTable);
                      char rtpr[CMD_MAX];
-                     sprintf(rtpr,"RTPR %d,%d",lexicalLevel,subRoutine->typesSize);
+                     int returnSize = subRoutine->category == FUNC;
+                     sprintf(rtpr,"RTPR %d,%d",lexicalLevel,subRoutine->typesSize-returnSize);
                      geraCodigo(NULL, rtpr);
 
                      lexicalLevel--;
@@ -522,29 +626,69 @@ tipo_func:  IDENT
                   imprimeErro("Erro na tabela de símbolos.");
                 }
 
-
                 Type *type = (Type*)malloc(sizeof(Type));
                 type->isReference = 0;
                 type->primitiveType = INT;
 
-                func->typesSize = func->typesSize+1;
-                func->types = (Type**)realloc(func->types,sizeof(Type*)*func->typesSize);
-                func->types[func->typesSize] = type;
-
+                if(count > 0){
+                  func->typesSize = func->typesSize+1;
+                  func->types = (Type**)realloc(func->types,sizeof(Type*)*func->typesSize);
+                  func->types[func->typesSize] = type;
+                }else{
+                  func->typesSize = 1;
+                  func->types = (Type**)malloc(sizeof(Type*));
+                  func->types[0] = type;
+                }
                 func->displacement = -4-count;
               }
             }
-  ;
+;
 
-//chama_subrotina: IDENT params
-//;
-//
-//params: ABRE_PARENTESES param_reais FECHA_PARENTESES
-//      |
-//;
-//
-//param_reais: expr_e
-//;
+chamada_subrotina:  variavel declara_params_reais
+                    {
+                      Symbol* symbol = getSymbol($1.value);
+                      int returnSize = symbol->category == FUNC;
+                      if(params.size != symbol->typesSize-returnSize){
+                        imprimeErro("Número incorreto de argumentos.");
+                      }else{
+                        if(returnSize){
+                          char amem[CMD_MAX];
+                          sprintf(amem,"AMEM 1");
+                          geraCodigo(NULL, amem);
+                        }
+                        for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
+                          Expr* expr = (Expr*)reversePop(&params);
+                          if(expr->primitiveType != INT
+                            || (symbol->types[i]->isReference 
+                                && expr->exprType != VARIABLE)){
+                            imprimeErro("Erro de sintaxe.");
+                          }else{
+                            generateExprCode(*expr,symbol->types[i]->isReference);
+                          }
+                        }
+                        char chpr[CMD_MAX];
+                        sprintf(chpr,"CHPR %s,%d",symbol->label,lexicalLevel);
+                        geraCodigo(NULL, chpr);
+                      }
+                      Expr func;
+                      strcpy(func.value,$1.value);
+                      func.primitiveType= returnSize ? INT : VOID;
+                      func.exprType=VARIABLE;
+                      $$=func;
+                    }
+;
+
+
+declara_params_reais: ABRE_PARENTESES param_reais FECHA_PARENTESES
+                    |
+;
+
+param_reais: param_reais VIRGULA expr_param 
+           | expr_param
+;
+
+expr_param: expr_e {push(&$1,&params);}
+;
 
 %%
 
@@ -569,6 +713,7 @@ int main (int argc, char** argv) {
  * ------------------------------------------------------------------- */
   startStack(&symbolTable);
   startStack(&labels);
+  startStack(&params);
 
    yyin=fp;
    yyparse();

@@ -13,9 +13,11 @@
 
 #define TAM_TOKEN 16
 
-//----- Adiconado por Israel B. Sant'Anna -----
-#define CMD_MAX 10
-//---------------------------------------------
+typedef struct Expr{
+  char value[TAM_TOKEN];
+  int primitiveType;
+  int exprType;
+}Expr;
 
 typedef enum simbolos { 
   simb_program, simb_var, simb_begin, simb_end, 

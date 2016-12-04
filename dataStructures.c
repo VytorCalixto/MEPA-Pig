@@ -17,16 +17,18 @@ typedef struct Symbol{
 
 typedef struct StackNode{
   void *element;
-  struct StackNode *next;
+  struct StackNode *next, *previous;
 }StackNode;
 
 typedef struct{
   StackNode *head,*tail;
+  int size;
 }Stack;
 
 void startStack(Stack *stack){
   stack->head = NULL;
   stack->tail = stack->head;
+  stack->size = 0;
 }
 
 int emptyStack(Stack *stack){
@@ -36,8 +38,15 @@ int emptyStack(Stack *stack){
 void push(void *element, Stack *stack){
   StackNode* head = (StackNode*)malloc(sizeof(StackNode));
   head->element = element;
+  head->previous = NULL;
   head->next = stack->head;
+  if(stack->head != NULL){
+    stack->head->previous = head;
+  }else{
+    stack->tail = head;
+  }
   stack->head = head;
+  stack->size++;
 }
 
 void* pop(Stack *stack){
@@ -47,8 +56,33 @@ void* pop(Stack *stack){
   }else{
     aux = stack->head;
     void *element = aux->element;
-    stack->head = stack->head->next;
+    stack->head = aux->next;
+    if(stack->head != NULL){
+      stack->head->previous = NULL;
+    }else{
+      stack->tail = NULL;
+    }
     free(aux);
+    stack->size--;
+    return element;
+  }
+}
+
+void* reversePop(Stack *stack){
+  StackNode *aux;
+  if(emptyStack(stack)){
+    return NULL;
+  }else{
+    aux = stack->tail;
+    void *element = aux->element;
+    stack->tail = stack->tail->previous;
+    if(stack->tail != NULL){
+      stack->tail->next = NULL;
+    }else{
+      stack->head = NULL;
+    }
+    free(aux);
+    stack->size--;
     return element;
   }
 }
@@ -68,17 +102,16 @@ void* getByReversedIndex(int index, Stack *stack){
 void clearLevel(int lexicalLevel, Stack *stack){
   if(!emptyStack(stack)){
     StackNode* iter = stack->head;
-    while(iter->next != NULL 
-            && ((Symbol*)iter->next->element)->lexicalLevel >= lexicalLevel){
-      stack->head = stack->head->next;
+    for(StackNode* iter=stack->head; 
+        iter != NULL 
+          && ((((Symbol*)iter->element)->category != PROC
+                && ((Symbol*)iter->element)->category != FUNC)
+              || ((Symbol*)iter->element)->lexicalLevel > lexicalLevel);
+        iter=stack->head){
+      stack->head = iter->next;
       free(iter->element);
       free(iter);
-      iter = stack->head;
-    }
-    if(lexicalLevel == 0){
-      stack->head = stack->head->next;
-      free(iter->element);
-      free(iter);
+      stack->size--;
     }
   }
 }
@@ -113,7 +146,7 @@ int countLevelSymbols(int category, int lexicalLevel, Stack *stack){
       iter != NULL;
       iter=iter->next){
     Symbol* symbol = (Symbol*)iter->element;
-    printf("\n\n symbol %s, category %d, lexicalLevel %d \n\n",symbol->name, symbol->category, symbol->lexicalLevel);
+    // printf("\n\n symbol %s, category %d, lexicalLevel %d \n\n",symbol->name, symbol->category, symbol->lexicalLevel);
     if(symbol->category == category && symbol->lexicalLevel == lexicalLevel){
       i++;
     }
