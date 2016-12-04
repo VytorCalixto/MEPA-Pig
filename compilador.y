@@ -66,6 +66,17 @@ void generateExprCode(Expr expr, int loadAddress){
   }
 }
 
+void generateStorageCode(char name[TAM_TOKEN]){
+  Symbol* var = getSymbol(name);
+  char arm[CMD_MAX];
+  if(!var->types[0]->isReference || var->category == FUNC){
+    sprintf(arm,"ARMZ %d,%d",var->lexicalLevel,var->displacement);
+  }else{
+    sprintf(arm,"ARMI %d,%d",var->lexicalLevel,var->displacement);
+  }
+  geraCodigo(NULL, arm);
+}
+
 %}
 
 %union {
@@ -77,7 +88,7 @@ void generateExprCode(Expr expr, int loadAddress){
 %token T_BEGIN T_END VAR IDENT ATRIBUICAO
 %token WHILE DO IF THEN ELSE
 %token MAIOR MENOR IGUAL DIFERENTE MAIOR_IGUAL MENOR_IGUAL
-%token PROCEDURE FUNCTION GOTO LABEL NUMERO
+%token PROCEDURE FUNCTION GOTO LABEL NUMERO READ WRITE
 %token MAIS MENOS VEZES DIVIDIDO OR AND TRUE FALSE
 
 %type <expr> expressao expr_e expr_t expr_f relacao constante variavel chamada_subrotina
@@ -202,6 +213,8 @@ comando_sem_rotulo: atribuicao
                   | condicional
                   | repetitivo
                   | chamada_subrotina
+                  | leitura
+                  | impressao
 ;
 
 atribuicao: variavel ATRIBUICAO expressao
@@ -210,14 +223,7 @@ atribuicao: variavel ATRIBUICAO expressao
                 imprimeErro("Erro de sintaxe");
               }else{
                 generateExprCode($3,0);
-                Symbol* var = getSymbol($1.value);
-                char arm[CMD_MAX];
-                if(var->types[0]->isReference){
-                  sprintf(arm,"ARMI %d,%d",var->lexicalLevel,var->displacement);
-                }else{
-                  sprintf(arm,"ARMZ %d,%d",var->lexicalLevel,var->displacement);
-                }
-                geraCodigo(NULL, arm);
+                generateStorageCode($1.value);
               }
             }
 ;
@@ -648,7 +654,8 @@ chamada_subrotina:  variavel declara_params_reais
                     {
                       Symbol* symbol = getSymbol($1.value);
                       int returnSize = symbol->category == FUNC;
-                      if(params.size != symbol->typesSize-returnSize){
+                      Stack* subRoutineParams = (Stack*)pop(&params);
+                      if(subRoutineParams->size != symbol->typesSize-returnSize){
                         imprimeErro("Número incorreto de argumentos.");
                       }else{
                         if(returnSize){
@@ -657,7 +664,7 @@ chamada_subrotina:  variavel declara_params_reais
                           geraCodigo(NULL, amem);
                         }
                         for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
-                          Expr* expr = (Expr*)reversePop(&params);
+                          Expr* expr = (Expr*)reversePop(subRoutineParams);
                           if(expr->primitiveType != INT
                             || (symbol->types[i]->isReference 
                                 && expr->exprType != VARIABLE)){
@@ -678,16 +685,54 @@ chamada_subrotina:  variavel declara_params_reais
                     }
 ;
 
+leitura:  READ declara_params
+          {
+            Stack* readParams = (Stack*)pop(&params);
+            while(!emptyStack(readParams)){
+              Expr* expr = (Expr*)reversePop(readParams);
+              if(expr->exprType != VARIABLE){
+                imprimeErro("Erro de sintaxe.");
+              }else{
+                char leit[CMD_MAX];
+                sprintf(leit,"LEIT");
+                geraCodigo(NULL, leit);
+                generateStorageCode(expr->value);
+              }
+            }
+          }
+;
 
-declara_params_reais: ABRE_PARENTESES param_reais FECHA_PARENTESES
+impressao:  WRITE declara_params
+            {
+              Stack* writeParams = (Stack*)pop(&params);
+              while(!emptyStack(writeParams)){
+                Expr* expr = (Expr*)reversePop(writeParams);
+                generateExprCode(*expr,0);
+                char impr[CMD_MAX];
+                sprintf(impr,"IMPR");
+                geraCodigo(NULL, impr);
+              }
+            }
+;
+
+declara_params_reais: declara_params
                     |
+;
+
+declara_params: ABRE_PARENTESES 
+                {
+                  Stack* subRoutineParams = (Stack*)malloc(sizeof(Stack));
+                  startStack(subRoutineParams);
+                  push(subRoutineParams,&params);
+                }
+                param_reais FECHA_PARENTESES
 ;
 
 param_reais: param_reais VIRGULA expr_param 
            | expr_param
 ;
 
-expr_param: expr_e {push(&$1,&params);}
+expr_param: expr_e {push(&$1,(Stack*)getByReversedIndex(0,&params));}
 ;
 
 %%
