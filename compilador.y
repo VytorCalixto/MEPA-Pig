@@ -526,9 +526,13 @@ desvio: GOTO NUMERO
         }
 ;
 
-parte_declara_subrotinas: declara_proc
-                        | declara_func
-                        |
+parte_declara_subrotinas: parte_declara_subrotinas parte_declara_subrotina
+                        | parte_declara_subrotina
+;
+
+parte_declara_subrotina: declara_proc
+                       | declara_func
+                       |
 ;
 
 declara_proc: PROCEDURE {subRoutineType = PROC;} 
