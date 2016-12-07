@@ -73,13 +73,33 @@ extern int yydebug;
     GOTO = 283,
     LABEL = 284,
     NUMERO = 285,
-    LOWER_THAN_ELSE = 286
+    READ = 286,
+    WRITE = 287,
+    MAIS = 288,
+    MENOS = 289,
+    VEZES = 290,
+    DIVIDIDO = 291,
+    OR = 292,
+    AND = 293,
+    TRUE = 294,
+    FALSE = 295,
+    LOWER_THAN_ELSE = 296
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+
+union YYSTYPE
+{
+#line 86 "compilador.y" /* yacc.c:1909  */
+
+  Expr expr;
+
+#line 100 "compilador.tab.h" /* yacc.c:1909  */
+};
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif

@@ -43,7 +43,9 @@ Symbol* getSymbol(char name[TAM_TOKEN]){
 }
 
 void generateExprCode(Expr expr, int loadAddress){
-  if(expr.value[0] != '\0'){
+  printf("\tAvaliated: %d\tValue: %s\n",expr.avaliated, expr.value);
+  if(expr.value[0] != '\0' && expr.avaliated == 0){
+    expr.avaliated = 1;
     if(expr.exprType == VARIABLE){
       Symbol* var = getSymbol(expr.value);
       if(var->category != FUNC){
@@ -62,7 +64,7 @@ void generateExprCode(Expr expr, int loadAddress){
       char crct[CMD_MAX];
       sprintf(crct,"CRCT %s", expr.value);
       geraCodigo(NULL, crct);
-    }else if(expr.exprType == COMMAND){
+    }else if(expr.exprType == COMMAND || expr.exprType == BOOLCOMMAND){
       geraCodigo(NULL, expr.value);
     }
   }
@@ -152,7 +154,7 @@ secao_var: {typeCount = 0;}
 
 tipo: IDENT
       {
-        if(strcmp(token,"integer") != 0){
+        if((strcmp(token,"integer") != 0) && (strcmp(token,"boolean") != 0)){
           imprimeErro("Tipo de variável não permitido.");
         }else{
           Symbol** vars = lastSymbols(typeCount,&symbolTable);
@@ -160,7 +162,10 @@ tipo: IDENT
             imprimeErro("Erro na tabela de símbolos.");
           }
           for(int i = 0; i < typeCount; i++){
-            vars[i]->types[0]->primitiveType = INT;
+            if((strcmp(token,"integer") == 0))
+              vars[i]->types[0]->primitiveType = INT;
+            else
+              vars[i]->types[0]->primitiveType = BOOL;
           }
         }
       }
@@ -221,7 +226,9 @@ comando_sem_rotulo: atribuicao
 
 atribuicao: variavel ATRIBUICAO expressao
             {
-              if($3.primitiveType != INT){
+              if(($1.primitiveType != $3.primitiveType) 
+                && $3.primitiveType != INT 
+                && $3.primitiveType != BOOL){
                 imprimeErro("Erro de sintaxe");
               }else{
                 generateExprCode($3,0);
@@ -232,22 +239,37 @@ atribuicao: variavel ATRIBUICAO expressao
 
 expressao:  expr_e relacao expr_e 
             {
-              verifyType(INT, $1.primitiveType, $3.primitiveType);
+              if($2.exprType == COMMAND) {
+                verifyType(INT, $1.primitiveType, $3.primitiveType);
+              } else if ($2.exprType == BOOLCOMMAND) {
+                if($1.primitiveType != $3.primitiveType 
+                  || ($1.primitiveType != INT && $1.primitiveType != BOOL)) {
+                  imprimeErro("Erro de sintaxe.");
+                }
+              }
               generateExprCode($1,0);
               generateExprCode($3,0);
               generateExprCode($2,0);
               Expr cmd;
+              cmd.avaliated = 0;
               cmd.value[0] = '\0';
               cmd.primitiveType=BOOL;
               cmd.exprType=COMMAND;
               $$=cmd;
             }
-         | expr_e {$$ = $1;}
+         | expr_e 
+          {
+            // printf("\tTIPO DA EXPRESSÃO: %d\n", $1.primitiveType);
+            if($1.primitiveType != BOOL) imprimeErro("Erro de sintaxe.");
+            generateExprCode($1,0);
+            $$ = $1;
+          }
 ;
 
 relacao:  MAIOR
           {
             Expr cmd;
+            cmd.avaliated = 0;
             strcpy(cmd.value,"CMMA");
             cmd.primitiveType=BOOL;
             cmd.exprType=COMMAND;
@@ -256,6 +278,7 @@ relacao:  MAIOR
        |  MENOR
           {
             Expr cmd;
+            cmd.avaliated = 0;
             strcpy(cmd.value,"CMME");
             cmd.primitiveType=BOOL;
             cmd.exprType=COMMAND;
@@ -264,6 +287,7 @@ relacao:  MAIOR
        |  MAIOR_IGUAL
           {
             Expr cmd;
+            cmd.avaliated = 0;
             strcpy(cmd.value,"CMAG");
             cmd.primitiveType=BOOL;
             cmd.exprType=COMMAND;
@@ -272,6 +296,7 @@ relacao:  MAIOR
        |  MENOR_IGUAL 
           {
             Expr cmd;
+            cmd.avaliated = 0;
             strcpy(cmd.value,"CMEG");
             cmd.primitiveType=BOOL;
             cmd.exprType=COMMAND;
@@ -280,17 +305,19 @@ relacao:  MAIOR
        |  IGUAL 
           {
             Expr cmd;
+            cmd.avaliated = 0;
             strcpy(cmd.value,"CMIG");
             cmd.primitiveType=BOOL;
-            cmd.exprType=COMMAND;
+            cmd.exprType=BOOLCOMMAND;
             $$=cmd;
           } 
        |  DIFERENTE 
           {
             Expr cmd;
+            cmd.avaliated = 0;
             strcpy(cmd.value,"CMDG");
             cmd.primitiveType=BOOL;
-            cmd.exprType=COMMAND;
+            cmd.exprType=BOOLCOMMAND;
             $$=cmd;
           } 
 ;
@@ -301,6 +328,7 @@ expr_e: expr_e MAIS expr_t
           generateExprCode($1,0);
           generateExprCode($3,0);
           Expr cmd;
+          cmd.avaliated = 0;
           strcpy(cmd.value,"SOMA");
           cmd.primitiveType=INT;
           cmd.exprType=COMMAND;
@@ -312,6 +340,7 @@ expr_e: expr_e MAIS expr_t
           generateExprCode($1,0);
           generateExprCode($3,0);
           Expr cmd;
+          cmd.avaliated = 0;
           strcpy(cmd.value,"DISJ");
           cmd.primitiveType=BOOL;
           cmd.exprType=COMMAND;
@@ -323,6 +352,7 @@ expr_e: expr_e MAIS expr_t
           generateExprCode($1,0);
           generateExprCode($3,0);
           Expr cmd;
+          cmd.avaliated = 0;
           strcpy(cmd.value,"SUBT");
           cmd.primitiveType=INT;
           cmd.exprType=COMMAND;
@@ -337,6 +367,7 @@ expr_t: expr_t VEZES expr_f
           generateExprCode($1,0);
           generateExprCode($3,0);
           Expr cmd;
+          cmd.avaliated = 0;
           strcpy(cmd.value,"MULT");
           cmd.primitiveType=INT;
           cmd.exprType=COMMAND;
@@ -348,6 +379,7 @@ expr_t: expr_t VEZES expr_f
           generateExprCode($1,0);
           generateExprCode($3,0);
           Expr cmd;
+          cmd.avaliated = 0;
           strcpy(cmd.value,"CONJ");
           cmd.primitiveType=BOOL;
           cmd.exprType=COMMAND;
@@ -359,6 +391,7 @@ expr_t: expr_t VEZES expr_f
           generateExprCode($1,0);
           generateExprCode($3,0);
           Expr cmd;
+          cmd.avaliated = 0;
           strcpy(cmd.value,"DIVI");
           cmd.primitiveType=INT;
           cmd.exprType=COMMAND;
@@ -376,8 +409,9 @@ expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {$$ = $2;}
 variavel: IDENT
           {
             Expr var;
+            var.avaliated = 0;
             strcpy(var.value,token);
-            var.primitiveType=INT;
+            var.primitiveType=getSymbol(token)->types[0]->primitiveType;
             var.exprType=VARIABLE;
             $$=var;
           }
@@ -386,6 +420,7 @@ variavel: IDENT
 constante:  NUMERO 
             {
               Expr cte;
+              cte.avaliated = 0;
               strcpy(cte.value,token);
               cte.primitiveType=INT;
               cte.exprType=CONSTANT;
@@ -394,6 +429,7 @@ constante:  NUMERO
          |  TRUE
             {
               Expr cte;
+              cte.avaliated = 0;
               strcpy(cte.value,"1");
               cte.primitiveType=BOOL;
               cte.exprType=CONSTANT;
@@ -402,6 +438,7 @@ constante:  NUMERO
          |  FALSE
             {
               Expr cte;
+              cte.avaliated = 0;
               strcpy(cte.value,"0");
               cte.primitiveType=BOOL;
               cte.exprType=CONSTANT;
@@ -629,7 +666,7 @@ declara_func: FUNCTION {subRoutineType = FUNC;}
 
 tipo_func:  IDENT
             {
-              if(strcmp(token,"integer") != 0){
+              if((strcmp(token,"integer") != 0) && (strcmp(token,"boolean") != 0)){
                 imprimeErro("Tipo de função não permitido.");
               }else{
                 int count = countLevelSymbols(PF,lexicalLevel,&symbolTable);
@@ -640,7 +677,10 @@ tipo_func:  IDENT
 
                 Type *type = (Type*)malloc(sizeof(Type));
                 type->isReference = 0;
-                type->primitiveType = INT;
+                if(strcmp(token,"integer") == 0) 
+                  type->primitiveType = INT;
+                else
+                  type->primitiveType = BOOL;
 
                 if(count > 0){
                   func->typesSize = func->typesSize+1;
@@ -692,6 +732,7 @@ chamada_subrotina:  variavel
                       sprintf(chpr,"CHPR %s,%d",symbol->label,lexicalLevel);
                       geraCodigo(NULL, chpr);
                       Expr func;
+                      func.avaliated = 0;
                       strcpy(func.value,$1.value);
                       func.primitiveType= returnSize ? INT : VOID;
                       func.exprType=VARIABLE;

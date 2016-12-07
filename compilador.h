@@ -17,6 +17,7 @@ typedef struct Expr{
   char value[TAM_TOKEN];
   int primitiveType;
   int exprType;
+  int avaliated;
 }Expr;
 
 typedef enum simbolos { 
