@@ -670,23 +670,27 @@ chamada_subrotina:  variavel
                       Symbol* symbol = getSymbol($1.value);
                       int returnSize = symbol->category == FUNC;
                       Stack* subRoutineParams = (Stack*)pop(&params);
-                      if(subRoutineParams->size != symbol->typesSize-returnSize){
-                        imprimeErro("Número incorreto de argumentos.");
-                      }else{
-                        for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
-                          Expr* expr = (Expr*)reversePop(subRoutineParams);
-                          if(expr->primitiveType != INT
-                            || (symbol->types[i]->isReference 
-                                && expr->exprType != VARIABLE)){
-                            imprimeErro("Erro de sintaxe.");
-                          }else{
-                            generateExprCode(*expr,symbol->types[i]->isReference);
+                      if(subRoutineParams != NULL){
+                        if(subRoutineParams->size != symbol->typesSize-returnSize){
+                          imprimeErro("Número incorreto de argumentos.");
+                        }else{
+                          for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
+                            Expr* expr = (Expr*)reversePop(subRoutineParams);
+                            if(expr->primitiveType != INT
+                              || (symbol->types[i]->isReference 
+                                  && expr->exprType != VARIABLE)){
+                              imprimeErro("Erro de sintaxe.");
+                            }else{
+                              generateExprCode(*expr,symbol->types[i]->isReference);
+                            }
                           }
                         }
-                        char chpr[CMD_MAX];
-                        sprintf(chpr,"CHPR %s,%d",symbol->label,lexicalLevel);
-                        geraCodigo(NULL, chpr);
+                      }else if(symbol->typesSize-returnSize > 0){
+                        imprimeErro("Número incorreto de argumentos.");
                       }
+                      char chpr[CMD_MAX];
+                      sprintf(chpr,"CHPR %s,%d",symbol->label,lexicalLevel);
+                      geraCodigo(NULL, chpr);
                       Expr func;
                       strcpy(func.value,$1.value);
                       func.primitiveType= returnSize ? INT : VOID;

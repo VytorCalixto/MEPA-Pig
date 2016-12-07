@@ -146,10 +146,27 @@ int countLevelSymbols(int category, int lexicalLevel, Stack *stack){
       iter != NULL;
       iter=iter->next){
     Symbol* symbol = (Symbol*)iter->element;
-    // printf("\n\n symbol %s, category %d, lexicalLevel %d \n\n",symbol->name, symbol->category, symbol->lexicalLevel);
     if(symbol->category == category && symbol->lexicalLevel == lexicalLevel){
       i++;
     }
   }
   return i;
+}
+
+void printSymbols(Stack *stack){
+  for(StackNode* iter=stack->head;
+      iter != NULL;
+      iter=iter->next){
+    Symbol* symbol = (Symbol*)iter->element;
+    printf("\n\n symbol %s, category %d, lexicalLevel %d typesSize %d label %s \n\n",symbol->name, symbol->category, symbol->lexicalLevel, symbol->typesSize, symbol->label);
+  }
+}
+
+void printParams(Stack *stack){
+  for(StackNode* iter=stack->head;
+      iter != NULL;
+      iter=iter->next){
+    Expr* expr = (Expr*)iter->element;
+    printf("\n\n value %s, primitiveType %d, exprType %d \n\n",expr->value, expr->primitiveType, expr->exprType);
+  }
 }
