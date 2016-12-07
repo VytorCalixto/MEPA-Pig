@@ -46,16 +46,18 @@ void generateExprCode(Expr expr, int loadAddress){
   if(expr.value[0] != '\0'){
     if(expr.exprType == VARIABLE){
       Symbol* var = getSymbol(expr.value);
-      char cr[CMD_MAX];
-      if((loadAddress && var->types[0]->isReference)
-          ||(!loadAddress && !var->types[0]->isReference)){
-        sprintf(cr,"CRVL %d,%d", var->lexicalLevel, var->displacement);
-      }else if(loadAddress){
-        sprintf(cr,"CREN %d,%d", var->lexicalLevel, var->displacement);
-      }else{
-        sprintf(cr,"CRVI %d,%d", var->lexicalLevel, var->displacement);
+      if(var->category != FUNC){
+        char cr[CMD_MAX];
+        if((loadAddress && var->types[0]->isReference)
+            ||(!loadAddress && !var->types[0]->isReference)){
+          sprintf(cr,"CRVL %d,%d", var->lexicalLevel, var->displacement);
+        }else if(loadAddress){
+          sprintf(cr,"CREN %d,%d", var->lexicalLevel, var->displacement);
+        }else{
+          sprintf(cr,"CRVI %d,%d", var->lexicalLevel, var->displacement);
+        }
+        geraCodigo(NULL, cr);
       }
-      geraCodigo(NULL, cr);
     }else if(expr.exprType == CONSTANT){
       char crct[CMD_MAX];
       sprintf(crct,"CRCT %s", expr.value);
@@ -650,7 +652,16 @@ tipo_func:  IDENT
             }
 ;
 
-chamada_subrotina:  variavel declara_params_reais
+chamada_subrotina:  variavel
+                    {
+                      Symbol* symbol = getSymbol($1.value);
+                      if(symbol->category == FUNC){
+                        char amem[CMD_MAX];
+                        sprintf(amem,"AMEM 1");
+                        geraCodigo(NULL, amem);
+                      }
+                    }
+                    declara_params_reais
                     {
                       Symbol* symbol = getSymbol($1.value);
                       int returnSize = symbol->category == FUNC;
@@ -658,11 +669,6 @@ chamada_subrotina:  variavel declara_params_reais
                       if(subRoutineParams->size != symbol->typesSize-returnSize){
                         imprimeErro("Número incorreto de argumentos.");
                       }else{
-                        if(returnSize){
-                          char amem[CMD_MAX];
-                          sprintf(amem,"AMEM 1");
-                          geraCodigo(NULL, amem);
-                        }
                         for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
                           Expr* expr = (Expr*)reversePop(subRoutineParams);
                           if(expr->primitiveType != INT
