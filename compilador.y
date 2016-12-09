@@ -245,6 +245,17 @@ atribuicao: variavel ATRIBUICAO expressao
                   generateStorageCode($1.value);
                 }
             }
+            | variavel ATRIBUICAO variavel
+            {
+                if(($1.primitiveType != $3.primitiveType)
+                  && $3.primitiveType != INT
+                  && $3.primitiveType != BOOL){
+                  imprimeErro("Erro de sintaxe");
+                }else{
+                  generateExprCode($3,0);
+                  generateStorageCode($1.value);
+                }
+            }
 ;
 
 expressao:  expr_e relacao expr_e

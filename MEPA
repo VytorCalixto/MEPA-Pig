@@ -20,3 +20,10 @@ R03: NADA
      RTPR 1,1
 R00: NADA 
      AMEM 1
+     CRCT 1
+     CHPR R01,0
+     ARMZ 0,0
+     CRVL 0,0
+     IMPR
+     DMEM 1
+     PARA
