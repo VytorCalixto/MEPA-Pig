@@ -7,7 +7,7 @@
  *
  * -------------------------------------------------------------------
  *
- * Tipos, protótipos e vaiáveis globais do compilador
+ * Tipos, protï¿½tipos e vaiï¿½veis globais do compilador
  *
  * ------------------------------------------------------------------- */
 
@@ -17,11 +17,10 @@ typedef struct Expr{
   char value[TAM_TOKEN];
   int primitiveType;
   int exprType;
-  int avaliated;
 }Expr;
 
-typedef enum simbolos { 
-  simb_program, simb_var, simb_begin, simb_end, 
+typedef enum simbolos {
+  simb_program, simb_var, simb_begin, simb_end,
   simb_identificador, simb_numero,
   simb_ponto, simb_virgula, simb_ponto_e_virgula, simb_dois_pontos,
   simb_atribuicao, simb_abre_parenteses, simb_fecha_parenteses,
@@ -35,7 +34,7 @@ typedef enum simbolos {
 
 
 /* -------------------------------------------------------------------
- * variáveis globais
+ * variï¿½veis globais
  * ------------------------------------------------------------------- */
 
 extern simbolos simbolo, relacao;
@@ -47,6 +46,3 @@ extern int nl;
 
 simbolos simbolo, relacao;
 char token[TAM_TOKEN];
-
-
-
