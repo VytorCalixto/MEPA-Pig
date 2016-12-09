@@ -279,11 +279,8 @@ expressao:  expr_e relacao expr_e
             }
          | expr_e
           {
-            printf("\tTIPO DA EXPRESSÃO: %d\tEXPRTYPE: %d\n", $1.primitiveType, $1.exprType);
-            printf("\tLOOP DE EXPRESSÃO? %d\n", expressionLoop);
             if($1.primitiveType != BOOL) imprimeErro("Erro de sintaxe.");
             if(($1.exprType == VARIABLE || $1.exprType == CONSTANT) && expressionLoop == 0){
-                printf("\tGerei código para: %s\n", $1.value);
                 generateExprCode($1,0);
             } else {
                 expressionLoop = 0;
@@ -414,7 +411,7 @@ expr_t: expr_t VEZES expr_f
       | expr_f {$$ = $1;}
 ;
 
-expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {expressionLoop = 1; printf("\tSETEI LOOP\n"); $$ = $2;}
+expr_f: ABRE_PARENTESES expressao FECHA_PARENTESES {expressionLoop = 1; $$ = $2;}
       | constante {expressionLoop = 0; $$=$1;}
       | variavel {expressionLoop = 0; $$=$1;}
       | chamada_subrotina {expressionLoop = 0; $$=$1;}

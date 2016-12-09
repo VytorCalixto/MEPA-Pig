@@ -4,7 +4,7 @@ var b : boolean;
 
 function f(c : boolean):boolean;
 begin
-if (c = True) 
+if (c = true) 
   then
     f:=1>2
   else
@@ -13,6 +13,6 @@ if (c = True)
 end;
 
 begin
-b:=f(True);
+b:=f(true);
    write(b);
 end.
