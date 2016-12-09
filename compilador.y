@@ -413,7 +413,8 @@ variavel: IDENT
           {
             Expr var;
             strcpy(var.value,token);
-            var.primitiveType=getSymbol(token)->types[0]->primitiveType;
+            Symbol* symbol = getSymbol(token);
+            var.primitiveType=symbol->types[symbol->typesSize-1]->primitiveType;
             var.exprType=VARIABLE;
             $$=var;
           }
@@ -678,13 +679,20 @@ tipo_func:  IDENT
                 type->isReference = 0;
                 if(strcmp(token,"integer") == 0)
                   type->primitiveType = INT;
-                else
+                else if(strcmp(token,"boolean") == 0)
                   type->primitiveType = BOOL;
+                else
+                  imprimeErro("Tipo inexistente.");
 
                 if(count > 0){
-                  func->typesSize = func->typesSize+1;
-                  func->types = (Type**)realloc(func->types,sizeof(Type*)*func->typesSize);
-                  func->types[func->typesSize] = type;
+                  Type** tmp = (Type**)realloc(func->types,sizeof(Type*)*func->typesSize+1);
+                  if(tmp == NULL){
+                    imprimeErro("Erro na alocação de memória.");
+                  }else{
+                    func->types = tmp;
+                    func->types[func->typesSize] = type;
+                    func->typesSize = func->typesSize+1;
+                  }
                 }else{
                   func->typesSize = 1;
                   func->types = (Type**)malloc(sizeof(Type*));
@@ -715,7 +723,7 @@ chamada_subrotina:  variavel
                         }else{
                           for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
                             Expr* expr = (Expr*)reversePop(subRoutineParams);
-                            if(expr->primitiveType != INT
+                            if(expr->primitiveType != symbol->types[i]->primitiveType
                               || (symbol->types[i]->isReference
                                   && expr->exprType != VARIABLE)){
                               imprimeErro("Erro de sintaxe.");
@@ -732,7 +740,7 @@ chamada_subrotina:  variavel
                       geraCodigo(NULL, chpr);
                       Expr func;
                       strcpy(func.value,$1.value);
-                      func.primitiveType= returnSize ? INT : VOID;
+                      func.primitiveType = returnSize ? symbol->types[symbol->typesSize-1]->primitiveType : VOID;
                       func.exprType=VARIABLE;
                       $$=func;
                     }
