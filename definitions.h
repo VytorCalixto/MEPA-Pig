@@ -13,3 +13,4 @@
 #define VARIABLE 0
 #define CONSTANT 1
 #define COMMAND 2
+#define BOOLCOMMAND 3

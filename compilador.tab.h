@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.0.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -73,13 +73,31 @@ extern int yydebug;
     GOTO = 283,
     LABEL = 284,
     NUMERO = 285,
-    LOWER_THAN_ELSE = 286
+    READ = 286,
+    WRITE = 287,
+    MAIS = 288,
+    MENOS = 289,
+    VEZES = 290,
+    DIVIDIDO = 291,
+    OR = 292,
+    AND = 293,
+    TRUE = 294,
+    FALSE = 295,
+    LOWER_THAN_ELSE = 296
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+typedef union YYSTYPE YYSTYPE;
+union YYSTYPE
+{
+#line 85 "compilador.y" /* yacc.c:1909  */
+
+  Expr expr;
+
+#line 100 "compilador.tab.h" /* yacc.c:1909  */
+};
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif

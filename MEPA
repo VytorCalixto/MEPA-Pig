@@ -1,2 +1,28 @@
      INPP
-     PARA
+     AMEM 2
+     CRVL 0,1
+     CRCT 10
+     CMMA
+     ARMZ 0,0
+     CRCT 1
+     CRCT 1
+     CMIG
+     ARMZ 0,0
+     CRVL 0,1
+     CRCT 10
+     CMMA
+     CRCT 1
+     CMIG
+     ARMZ 0,0
+R00: NADA 
+     CRVL 0,0
+     DSVF R01
+     CRVL 0,0
+     DSVF R02
+     CRCT 0
+     ARMZ 0,0
+R02: NADA 
+     DSVS R00
+R01: NADA 
+     CRCT 1
+     CRCT 2

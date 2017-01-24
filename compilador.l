@@ -10,7 +10,7 @@
 //#define IMPRIME(STR) {};
 #define IMPRIME(STR) printf("%s    # %s \n", STR, token);
 
-int nl = 1;  
+int nl = 1;
 
 %}
 
@@ -18,7 +18,7 @@ pulo_linha [\n]
 
 descarte [\t ]+
 
-ident [a-zAZ][a-zAZ1-9]*
+ident [a-zA-Z][a-zA-Z1-9]*
 
 numero [0-9]+
 
@@ -26,19 +26,19 @@ comentario "(*".*"*)"
 
 %%
 
-{pulo_linha} {nl++;} 
+{pulo_linha} {nl++;}
 
 {descarte}
 
 {comentario}
 
-program { simbolo  = simb_program;  
+program { simbolo  = simb_program;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME("program ");
           return PROGRAM;
  }
 
-var      { simbolo = simb_var;  
+var      { simbolo = simb_var;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME("var  ");
           return VAR;
@@ -122,140 +122,140 @@ write { simbolo = simb_write;
           return WRITE;
  }
 
-\>= { simbolo = simb_maior_igual;  
+\>= { simbolo = simb_maior_igual;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" maior_igual  ");
-          return MAIOR_IGUAL;  
+          return MAIOR_IGUAL;
  }
 
-\<= { simbolo = simb_menor_igual;  
+\<= { simbolo = simb_menor_igual;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" menor_igual  ");
-          return MENOR_IGUAL;  
+          return MENOR_IGUAL;
  }
 
-\<> { simbolo = simb_diferente;  
+\<> { simbolo = simb_diferente;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" diferente  ");
-          return DIFERENTE;  
+          return DIFERENTE;
  }
 
-\> { simbolo = simb_maior;  
+\> { simbolo = simb_maior;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" maior  ");
-          return MAIOR;  
+          return MAIOR;
  }
 
-\< { simbolo = simb_menor;  
+\< { simbolo = simb_menor;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" menor  ");
-          return MENOR;  
+          return MENOR;
  }
 
-\= { simbolo = simb_igual;  
+\= { simbolo = simb_igual;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" igual  ");
-          return IGUAL;  
+          return IGUAL;
  }
 
-\+ { simbolo = simb_mais;  
+\+ { simbolo = simb_mais;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" mais  ");
-          return MAIS;  
+          return MAIS;
  }
 
-\- { simbolo = simb_menos;  
+\- { simbolo = simb_menos;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" menos  ");
-          return MENOS;  
+          return MENOS;
  }
 
-\* { simbolo = simb_vezes;  
+\* { simbolo = simb_vezes;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" vezes  ");
-          return VEZES;  
+          return VEZES;
  }
 
-\/ { simbolo = simb_dividido;  
+\/ { simbolo = simb_dividido;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" dividido  ");
-          return DIVIDIDO;  
+          return DIVIDIDO;
  }
 
-or { simbolo = simb_or;  
+or { simbolo = simb_or;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" or  ");
-          return OR;  
+          return OR;
  }
 
-and { simbolo = simb_and;  
+and { simbolo = simb_and;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" and  ");
-          return AND;  
+          return AND;
  }
 
-True { simbolo = simb_true;  
+true { simbolo = simb_true;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" true  ");
-          return TRUE;  
+          return TRUE;
  }
 
-False { simbolo = simb_false;  
+false { simbolo = simb_false;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" false  ");
-          return FALSE;  
+          return FALSE;
  }
 
-:= { simbolo = simb_atribuicao;  
+:= { simbolo = simb_atribuicao;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" atribuicao  ");
-          return ATRIBUICAO;  
+          return ATRIBUICAO;
  }
 
-\; { simbolo = simb_ponto_e_virgula;  
+\; { simbolo = simb_ponto_e_virgula;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" pt_virgula  ");
           return PONTO_E_VIRGULA;
  }
 
-\: { simbolo = simb_dois_pontos;  
+\: { simbolo = simb_dois_pontos;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" dois pontos ");
           return DOIS_PONTOS;
  }
 
-\, { simbolo = simb_virgula;  
+\, { simbolo = simb_virgula;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" virgula  ");
           return VIRGULA;
  }
 
 
-\. { simbolo = simb_ponto;  
+\. { simbolo = simb_ponto;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" ponto  ");
-          return PONTO; 
+          return PONTO;
     }
 
-\(  { simbolo = simb_abre_parenteses;  
+\(  { simbolo = simb_abre_parenteses;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" abre_parenteses  ");
           return ABRE_PARENTESES;
     }
 
-\)  { simbolo = simb_fecha_parenteses;  
+\)  { simbolo = simb_fecha_parenteses;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" fecha_parenteses ");
           return FECHA_PARENTESES;
  }
 
-{numero} { simbolo = simb_numero; 
+{numero} { simbolo = simb_numero;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" numero  ");
           return NUMERO;
         }
 
-{ident} { simbolo = simb_identificador; 
+{ident} { simbolo = simb_identificador;
           strncpy (token, yytext, TAM_TOKEN);
           IMPRIME(" ident  ");
           return IDENT;
@@ -263,4 +263,3 @@ False { simbolo = simb_false;
 
 
 %%
-
