@@ -26,7 +26,7 @@ int expressionLoop = 0;
 
 void verifyType(int type, int first, int third){
   if(first != type || third != type){
-    imprimeErro("Erro de sintaxe.");
+    imprimeErro("Erro de sintaxe ao verificar tipo");
   }
 }
 
@@ -38,7 +38,7 @@ void nextLabel(char* label){
 Symbol* getSymbol(char name[TAM_TOKEN]){
   Symbol* symbol = findSymbol(name, &symbolTable);
   if(symbol == NULL){
-    imprimeErro("S�mbolo inexistente.");
+    imprimeErro("Símbolo inexistente.");
   }
   return symbol;
 }
@@ -154,11 +154,11 @@ secao_var: {typeCount = 0;}
 tipo: IDENT
       {
         if((strcmp(token,"integer") != 0) && (strcmp(token,"boolean") != 0)){
-          imprimeErro("Tipo de vari�vel n�o permitido.");
+          imprimeErro("Tipo de variável não permitido.");
         }else{
           Symbol** vars = lastSymbols(typeCount,&symbolTable);
           if(vars == NULL){
-            imprimeErro("Erro na tabela de s�mbolos.");
+            imprimeErro("Erro na tabela de símbolos.");
           }
           for(int i = 0; i < typeCount; i++){
             if((strcmp(token,"integer") == 0))
@@ -228,7 +228,7 @@ atribuicao: variavel ATRIBUICAO expressao
               if(($1.primitiveType != $3.primitiveType)
                 && $3.primitiveType != INT
                 && $3.primitiveType != BOOL){
-                imprimeErro("Erro de sintaxe");
+                imprimeErro("Erro de sintaxe na atribuição 1");
               }else{
                 generateExprCode($3,0);
                 generateStorageCode($1.value);
@@ -239,7 +239,7 @@ atribuicao: variavel ATRIBUICAO expressao
                 if(($1.primitiveType != $3.primitiveType)
                   && $3.primitiveType != INT
                   && $3.primitiveType != BOOL){
-                  imprimeErro("Erro de sintaxe");
+                  imprimeErro("Erro de sintaxe na atribuição 2");
                 }else{
                   generateExprCode($3,0);
                   generateStorageCode($1.value);
@@ -250,7 +250,7 @@ atribuicao: variavel ATRIBUICAO expressao
                 if(($1.primitiveType != $3.primitiveType)
                   && $3.primitiveType != INT
                   && $3.primitiveType != BOOL){
-                  imprimeErro("Erro de sintaxe");
+                  imprimeErro("Erro de sintaxe na atribuição 3");
                 }else{
                   generateExprCode($3,0);
                   generateStorageCode($1.value);
@@ -265,7 +265,7 @@ expressao:  expr_e relacao expr_e
               } else if ($2.exprType == BOOLCOMMAND) {
                 if($1.primitiveType != $3.primitiveType
                   || ($1.primitiveType != INT && $1.primitiveType != BOOL)) {
-                  imprimeErro("Erro de sintaxe.");
+                  imprimeErro("Erro de sintaxe na expressão 1");
                 }
               }
               generateExprCode($1,0);
@@ -279,7 +279,7 @@ expressao:  expr_e relacao expr_e
             }
          | expr_e
           {
-            if($1.primitiveType != BOOL) imprimeErro("Erro de sintaxe.");
+            if($1.primitiveType != BOOL && $1.primitiveType != INT) imprimeErro("Erro de sintaxe na expressão 2");
             if(($1.exprType == VARIABLE || $1.exprType == CONSTANT) && expressionLoop == 0){
                 generateExprCode($1,0);
             } else {
@@ -619,7 +619,7 @@ declara_subrotina: IDENT
                      if(count > 0){
                        Symbol** vars = lastSymbols(count+1,&symbolTable);
                        if(vars == NULL){
-                         imprimeErro("Erro na tabela de s�mbolos.");
+                         imprimeErro("Erro na tabela de símbolos.");
                        }
                        Symbol* subRoutine = vars[count];
                        subRoutine->types = (Type**)malloc(sizeof(Type*)*count);
@@ -675,12 +675,12 @@ declara_func: FUNCTION {subRoutineType = FUNC;}
 tipo_func:  IDENT
             {
               if((strcmp(token,"integer") != 0) && (strcmp(token,"boolean") != 0)){
-                imprimeErro("Tipo de fun��o n�o permitido.");
+                imprimeErro("Tipo de função não permitido.");
               }else{
                 int count = countLevelSymbols(PF,lexicalLevel,&symbolTable);
                 Symbol* func = (Symbol*)getByReversedIndex(count,&symbolTable);
                 if(func == NULL){
-                  imprimeErro("Erro na tabela de s�mbolos.");
+                  imprimeErro("Erro na tabela de símbolos.");
                 }
 
                 Type *type = (Type*)malloc(sizeof(Type));
@@ -727,7 +727,7 @@ chamada_subrotina:  variavel
                       Stack* subRoutineParams = (Stack*)pop(&params);
                       if(subRoutineParams != NULL){
                         if(subRoutineParams->size != symbol->typesSize-returnSize){
-                          imprimeErro("N�mero incorreto de argumentos.");
+                          imprimeErro("Nímero incorreto de argumentos.");
                         }else{
                           for(int i=symbol->typesSize-returnSize-1; i>=0;i--){
                             Expr* expr = (Expr*)reversePop(subRoutineParams);
@@ -760,7 +760,7 @@ leitura:  READ declara_params
             while(!emptyStack(readParams)){
               Expr* expr = (Expr*)reversePop(readParams);
               if(expr->exprType != VARIABLE){
-                imprimeErro("Erro de sintaxe.");
+                imprimeErro("Erro de sintaxe na leitura");
               }else{
                 char leit[CMD_MAX];
                 sprintf(leit,"LEIT");
@@ -823,7 +823,7 @@ int main (int argc, char** argv) {
 
 
 /* -------------------------------------------------------------------
- *  Inicia a Tabela de S�mbolos
+ *  Inicia a Tabela de Símbolos
  * ------------------------------------------------------------------- */
   startStack(&symbolTable);
   startStack(&labels);
